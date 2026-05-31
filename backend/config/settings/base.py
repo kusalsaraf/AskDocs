@@ -140,6 +140,19 @@ REDIS_URL = env("REDIS_URL", default="redis://localhost:6379/0")
 
 LOG_LEVEL = env("LOG_LEVEL", default="INFO")
 
+# ── Provider system ───────────────────────────────────────────────────────────
+PROVIDER_ENCRYPTION_KEY = env("PROVIDER_ENCRYPTION_KEY")  # no default — raises at startup if missing
+DEFAULT_PLATFORM_GEMINI_API_KEY = env("DEFAULT_PLATFORM_GEMINI_API_KEY", default="")
+PROVIDER_TEST_RATE_LIMIT_PER_HOUR = env.int("PROVIDER_TEST_RATE_LIMIT_PER_HOUR", default=10)
+PROVIDER_REQUEST_TIMEOUT_SECONDS = env.int("PROVIDER_REQUEST_TIMEOUT_SECONDS", default=30)
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": env("REDIS_URL", default="redis://localhost:6379/0"),
+    }
+}
+
 # ── JWT ───────────────────────────────────────────────────────────────────────
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
