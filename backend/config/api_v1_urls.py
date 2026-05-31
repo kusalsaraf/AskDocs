@@ -4,6 +4,7 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from apps.accounts.views import GoogleLoginView, MeView
+from apps.providers.views import ProviderConfigView, ProviderTestView, SupportedProvidersView
 from apps.workspaces.views import (
     InvitationAcceptView,
     InvitationViewSet,
@@ -45,5 +46,22 @@ urlpatterns: list[URLPattern] = [
         "invitations/<uuid:token>/accept/",
         InvitationAcceptView.as_view(),
         name="invitation-accept",
+    ),
+    # Provider config (singleton per workspace — admin only)
+    path(
+        "workspaces/<uuid:workspace_id>/provider/",
+        ProviderConfigView.as_view(),
+        name="provider-config",
+    ),
+    path(
+        "workspaces/<uuid:workspace_id>/provider/test/",
+        ProviderTestView.as_view(),
+        name="provider-test",
+    ),
+    # Public provider metadata (no auth required)
+    path(
+        "providers/supported/",
+        SupportedProvidersView.as_view(),
+        name="providers-supported",
     ),
 ]
