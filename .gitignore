@@ -47,3 +47,5 @@ backend/dist/
 backend/.pytest_cache/
 backend/htmlcov/
 backend/.coverage
+backend/.mypy_cache/
+backend/.ruff_cache/
