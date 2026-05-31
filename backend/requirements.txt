@@ -10,3 +10,8 @@ drf-spectacular==0.27.2
 gunicorn==22.0.0
 uvicorn[standard]==0.30.1
 python-json-logger==2.0.7
+djangorestframework-simplejwt==5.3.1
+dj-rest-auth==6.0.0
+django-allauth==0.63.3
+requests==2.32.3
+cryptography==42.0.8
