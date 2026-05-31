@@ -1,50 +1,49 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
-.yarn/install-state.gz
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
+# ── Common ────────────────────────────────────────────────────────────────────
 .DS_Store
 *.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# local env files
-.env
-.env.local
-.env.development
-.env.production
-.env*.local
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-# IDE
-.idea/
+*.log
+logs/
 .vscode/
+.idea/
 *.swp
 *.swo
 
-# logs
-logs/
-*.log
+# ── Frontend (Next.js) ────────────────────────────────────────────────────────
+frontend/node_modules/
+frontend/.pnp
+frontend/.pnp.js
+frontend/.yarn/install-state.gz
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/coverage/
+frontend/*.tsbuildinfo
+frontend/next-env.d.ts
+
+# Frontend env
+frontend/.env
+frontend/.env.local
+frontend/.env.development
+frontend/.env.production
+frontend/.env*.local
+
+# Vercel
+frontend/.vercel
+
+# ── Backend (Django) ──────────────────────────────────────────────────────────
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.pyc
+backend/**/*.pyc
+backend/.venv/
+backend/venv/
+backend/.env
+backend/.env.local
+backend/db.sqlite3
+backend/staticfiles/
+backend/media/
+backend/*.egg-info/
+backend/dist/
+backend/.pytest_cache/
+backend/htmlcov/
+backend/.coverage
