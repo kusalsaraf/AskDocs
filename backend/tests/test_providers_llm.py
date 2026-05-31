@@ -179,7 +179,7 @@ def test_azure_test_connection_success(workspace: Any) -> None:
 def test_mistral_test_connection_success(workspace: Any) -> None:
     config = _make_config(workspace, "mistral", model_name="mistral-large-latest")
 
-    with patch("mistralai.client.MistralClient") as mock_cls:
+    with patch("apps.providers.llm.mistral.MistralClient") as mock_cls:
         mock_client = MagicMock()
         mock_cls.return_value = mock_client
         mock_resp = MagicMock()
