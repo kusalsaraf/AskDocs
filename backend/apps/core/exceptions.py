@@ -48,6 +48,42 @@ class RateLimitExceeded(AskDocsError):
     default_detail = "Rate limit exceeded. Please try again later."
 
 
+class WorkspaceAccessDenied(AskDocsError):
+    status_code = 403
+    default_code = "workspace_access_denied"
+    default_detail = "You do not have access to this workspace."
+
+
+class InsufficientWorkspaceRole(AskDocsError):
+    status_code = 403
+    default_code = "insufficient_workspace_role"
+    default_detail = "Your role in this workspace does not allow this action."
+
+
+class CannotRemoveSoleAdmin(AskDocsError):
+    status_code = 400
+    default_code = "cannot_remove_sole_admin"
+    default_detail = "Cannot remove or demote the sole admin of a workspace."
+
+
+class CannotDeletePersonalWorkspace(AskDocsError):
+    status_code = 400
+    default_code = "cannot_delete_personal_workspace"
+    default_detail = "Personal workspaces cannot be deleted."
+
+
+class InvitationExpired(AskDocsError):
+    status_code = 400
+    default_code = "invitation_expired"
+    default_detail = "This invitation has expired."
+
+
+class InvitationAlreadyAccepted(AskDocsError):
+    status_code = 400
+    default_code = "invitation_already_accepted"
+    default_detail = "This invitation has already been accepted."
+
+
 def custom_exception_handler(exc: Exception, context: dict[str, Any]) -> Response | None:
     if isinstance(exc, AskDocsError):
         logger.error(
