@@ -9,10 +9,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from apps.providers.crypto import encrypt_api_key
-from apps.providers.llm.base import Message, ProviderTestResult
+from apps.providers.llm.base import Message
 
 
-def _make_config(workspace: Any, provider_name: str, model_name: str = "test-model", **kwargs: Any) -> Any:
+def _make_config(
+    workspace: Any, provider_name: str, model_name: str = "test-model", **kwargs: Any
+) -> Any:
     from apps.providers.models import ProviderConfig
 
     return ProviderConfig.objects.create(

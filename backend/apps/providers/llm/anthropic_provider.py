@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Any, Iterator
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, Any
 
 import anthropic as anthropic_sdk
 from django.conf import settings
@@ -45,7 +46,11 @@ class AnthropicProvider(BaseLLMProvider):
         start = time.monotonic()
         logger.info(
             "Anthropic test_connection start",
-            extra={"provider": "anthropic", "workspace_id": str(self.config.workspace_id), "model": self._model_name},
+            extra={
+                "provider": "anthropic",
+                "workspace_id": str(self.config.workspace_id),
+                "model": self._model_name,
+            },
         )
         try:
             resp = self._client.messages.create(
@@ -66,7 +71,9 @@ class AnthropicProvider(BaseLLMProvider):
         except Exception as exc:
             latency_ms = int((time.monotonic() - start) * 1000)
             logger.error("Anthropic test_connection failed", extra={"error": str(exc)})
-            return ProviderTestResult(success=False, latency_ms=latency_ms, model_echo="", error=str(exc))
+            return ProviderTestResult(
+                success=False, latency_ms=latency_ms, model_echo="", error=str(exc)
+            )
 
     def complete(self, messages: list[Message], **kwargs: Any) -> CompletionResult:
         max_tokens = kwargs.get("max_tokens", self.config.max_tokens if self.config else 2048)

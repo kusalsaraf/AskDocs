@@ -39,7 +39,9 @@ def test_test_endpoint_returns_success_on_mocked_ok(auth_client, workspace, user
 def test_test_endpoint_returns_failure_on_mocked_error(auth_client, workspace, user):
     _create_config(workspace, user)
 
-    mock_result = ProviderTestResult(success=False, latency_ms=50, model_echo="", error="invalid api key")
+    mock_result = ProviderTestResult(
+        success=False, latency_ms=50, model_echo="", error="invalid api key"
+    )
     with patch("apps.providers.views.test_provider", return_value=mock_result):
         response = auth_client.post(_test_url(workspace.id))
 

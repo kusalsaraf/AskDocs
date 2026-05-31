@@ -30,12 +30,12 @@ def test_factory_returns_openai_provider_for_openai_config(workspace):
 
 @pytest.mark.django_db
 def test_factory_returns_gemini_provider_for_gemini_config(workspace):
+    from unittest.mock import patch
+
     from apps.providers.crypto import encrypt_api_key
     from apps.providers.llm.factory import get_llm_provider_for_workspace
     from apps.providers.llm.gemini import GeminiProvider
     from apps.providers.models import ProviderConfig
-
-    from unittest.mock import patch
     with patch("google.generativeai.configure"):
         ProviderConfig.objects.create(
             workspace=workspace,
