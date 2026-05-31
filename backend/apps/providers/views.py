@@ -27,7 +27,7 @@ def _get_admin_workspace(workspace_id: str, user: Any) -> Workspace:
     try:
         workspace = Workspace.objects.get(id=workspace_id)
     except Workspace.DoesNotExist:
-        raise NotFound("Workspace not found.")
+        raise NotFound("Workspace not found.") from None
     if not Membership.objects.filter(
         workspace=workspace, user=user, role=Membership.Role.ADMIN
     ).exists():

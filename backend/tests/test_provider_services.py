@@ -98,7 +98,9 @@ def test_test_provider_updates_db_on_failure(workspace, user):
         created_by=user,
     )
 
-    mock_result = ProviderTestResult(success=False, latency_ms=50, model_echo="", error="invalid key")
+    mock_result = ProviderTestResult(
+        success=False, latency_ms=50, model_echo="", error="invalid key"
+    )
     with patch("apps.providers.services.get_active_provider") as mock_factory:
         mock_provider = MagicMock()
         mock_provider.test_connection.return_value = mock_result

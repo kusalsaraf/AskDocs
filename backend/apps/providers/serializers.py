@@ -72,15 +72,23 @@ class ProviderConfigWriteSerializer(serializers.Serializer[ProviderConfig]):
         provider = data["provider_name"]
 
         if provider in _PROVIDERS_REQUIRING_KEY and not data.get("api_key"):
-            raise serializers.ValidationError({"api_key": f"api_key is required for {provider}."})
+            raise serializers.ValidationError(
+                {"api_key": f"api_key is required for {provider}."}
+            )
         if provider in _PROVIDERS_REQUIRING_BASE_URL and not data.get("base_url"):
-            raise serializers.ValidationError({"base_url": f"base_url is required for {provider}."})
+            raise serializers.ValidationError(
+                {"base_url": f"base_url is required for {provider}."}
+            )
         if provider in _PROVIDERS_REQUIRING_REGION and not data.get("azure_region"):
-            raise serializers.ValidationError({"azure_region": "azure_region is required for Azure."})
+            raise serializers.ValidationError(
+                {"azure_region": "azure_region is required for Azure."}
+            )
 
         temp = data.get("temperature", 0.7)
         if not (0.0 <= temp <= 1.0):
-            raise serializers.ValidationError({"temperature": "temperature must be between 0.0 and 1.0."})
+            raise serializers.ValidationError(
+                {"temperature": "temperature must be between 0.0 and 1.0."}
+            )
 
         return data
 
