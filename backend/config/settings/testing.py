@@ -9,3 +9,14 @@ DATABASES = {
         "NAME": ":memory:",
     }
 }
+
+# Valid Fernet key for tests — DO NOT use in production
+# URL-safe base64 of 32 zero-bytes; structurally valid for Fernet
+PROVIDER_ENCRYPTION_KEY = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+
+# LocMemCache (not DummyCache) so rate-limit counter actually increments in tests
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+    }
+}
