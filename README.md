@@ -26,8 +26,10 @@ AskDocs/
 │   ├── package.json
 │   ├── tailwind.config.ts
 │   └── tsconfig.json
-├── backend/                # Django backend (in progress)
-│   └── .gitkeep
+├── backend/                # Django REST API
+│   ├── config/             # Django project settings, URLs, Celery
+│   ├── apps/               # core, accounts, workspaces, documents, chat, providers
+│   └── tests/              # pytest integration tests
 ├── .gitignore
 └── README.md
 ```
@@ -46,7 +48,15 @@ App runs at `http://localhost:3000`.
 
 ### Backend
 
-Backend setup coming next — see `backend/README.md` once available.
+```bash
+cd backend
+cp .env.example .env
+docker compose up --build
+```
+
+API at `http://localhost:8000`. Swagger UI at `http://localhost:8000/api/docs/`.
+
+See [`backend/README.md`](backend/README.md) for full setup, test, and lint instructions.
 
 ## Tech stack
 
@@ -65,4 +75,4 @@ Backend setup coming next — see `backend/README.md` once available.
 | Part | State |
 |---|---|
 | **Frontend** | Complete — all screens implemented, dark/light theme, hydration-safe relative timestamps |
-| **Backend** | In progress — Django API coming next |
+| **Backend** | Phase 1 complete — foundation, health endpoint, Docker stack |
