@@ -10,7 +10,8 @@ ignore = ["B008", "N818"]
 known-first-party = ["apps", "config"]
 
 [tool.ruff.lint.per-file-ignores]
-"*/migrations/*" = ["E501", "I001"]
+"*/migrations/*" = ["E501", "I001", "N999"]
+"*/test_migrations/*" = ["E501", "I001", "N999"]
 
 [tool.mypy]
 strict = true

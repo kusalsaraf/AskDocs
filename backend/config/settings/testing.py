@@ -10,6 +10,12 @@ DATABASES = {
     }
 }
 
+# Documents migrations use pgvector (PostgreSQL-only). Redirect to SQLite-compatible
+# test migrations that use TextField instead of VectorField and omit the HNSW index.
+MIGRATION_MODULES = {
+    "documents": "apps.documents.test_migrations",
+}
+
 # Valid Fernet key for tests — DO NOT use in production
 # URL-safe base64 of 32 zero-bytes; structurally valid for Fernet
 PROVIDER_ENCRYPTION_KEY = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="

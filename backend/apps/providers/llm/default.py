@@ -44,4 +44,4 @@ class PlatformDefaultProvider(BaseLLMProvider):
         return self._get_gemini().complete(messages, **kwargs)
 
     def stream(self, messages: list[Message], **kwargs: Any) -> Iterator[StreamChunk]:
-        raise NotImplementedError("Streaming will be implemented in Phase 5")
+        return self._get_gemini().stream(messages, **kwargs)

@@ -4,6 +4,13 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from apps.accounts.views import GoogleLoginView, MeView
+from apps.chat.views import (
+    ConversationDetailView,
+    ConversationListCreateView,
+    MessageSourcesView,
+    MessageStreamView,
+    QuotaView,
+)
 from apps.providers.views import ProviderConfigView, ProviderTestView, SupportedProvidersView
 from apps.workspaces.views import (
     InvitationAcceptView,
@@ -63,5 +70,34 @@ urlpatterns: list[URLPattern] = [
         "providers/supported/",
         SupportedProvidersView.as_view(),
         name="providers-supported",
+    ),
+    # Conversations
+    path(
+        "workspaces/<uuid:workspace_id>/conversations/",
+        ConversationListCreateView.as_view(),
+        name="conversation-list-create",
+    ),
+    path(
+        "workspaces/<uuid:workspace_id>/conversations/<uuid:conversation_id>/",
+        ConversationDetailView.as_view(),
+        name="conversation-detail",
+    ),
+    # Messages (SSE stream)
+    path(
+        "workspaces/<uuid:workspace_id>/conversations/<uuid:conversation_id>/messages/",
+        MessageStreamView.as_view(),
+        name="message-stream",
+    ),
+    # Message sources
+    path(
+        "workspaces/<uuid:workspace_id>/conversations/<uuid:conversation_id>/messages/<uuid:message_id>/sources/",
+        MessageSourcesView.as_view(),
+        name="message-sources",
+    ),
+    # Quota
+    path(
+        "workspaces/<uuid:workspace_id>/chat/quota/",
+        QuotaView.as_view(),
+        name="chat-quota",
     ),
 ]
