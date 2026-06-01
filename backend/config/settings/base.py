@@ -140,6 +140,13 @@ REDIS_URL = env("REDIS_URL", default="redis://localhost:6379/0")
 
 LOG_LEVEL = env("LOG_LEVEL", default="INFO")
 
+# ── Chat / RAG ────────────────────────────────────────────────────────────────
+USER_DAILY_MESSAGE_LIMIT = env.int("USER_DAILY_MESSAGE_LIMIT", default=100)
+GLOBAL_DAILY_PLATFORM_LLM_BUDGET = env.int("GLOBAL_DAILY_PLATFORM_LLM_BUDGET", default=5000)
+CHAT_RESPONSE_CACHE_TTL_SECONDS = env.int("CHAT_RESPONSE_CACHE_TTL_SECONDS", default=86400)
+CHAT_DEFAULT_TOP_K = env.int("CHAT_DEFAULT_TOP_K", default=5)
+CHAT_MAX_HISTORY_TURNS = env.int("CHAT_MAX_HISTORY_TURNS", default=6)
+
 # ── Provider system ───────────────────────────────────────────────────────────
 # No default — raises ImproperlyConfigured at startup if missing
 PROVIDER_ENCRYPTION_KEY = env("PROVIDER_ENCRYPTION_KEY")

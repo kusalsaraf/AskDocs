@@ -92,4 +92,23 @@ class GeminiProvider(BaseLLMProvider):
         )
 
     def stream(self, messages: list[Message], **kwargs: Any) -> Iterator[StreamChunk]:
-        raise NotImplementedError("Streaming will be implemented in Phase 5")
+        max_tokens = kwargs.get("max_tokens", self.config.max_tokens if self.config else 2048)
+        temperature = kwargs.get("temperature", self.config.temperature if self.config else 0.7)
+
+        history = [
+            {"role": "user" if m.role == "user" else "model", "parts": [m.content]}
+            for m in messages[:-1]
+        ]
+        chat = self._model().start_chat(history=history)
+        response = chat.send_message(
+            messages[-1].content,
+            generation_config=genai.GenerationConfig(
+                max_output_tokens=max_tokens, temperature=temperature
+            ),
+            stream=True,
+            request_options={"timeout": settings.PROVIDER_REQUEST_TIMEOUT_SECONDS},
+        )
+        for chunk in response:
+            if chunk.text:
+                yield StreamChunk(delta=chunk.text)
+        yield StreamChunk(delta="", finish_reason="stop")
