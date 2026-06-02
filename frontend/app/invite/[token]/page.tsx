@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import { useGoogleLogin } from '@react-oauth/google'
+import { useQueryClient } from '@tanstack/react-query'
 import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { acceptInvitation } from '@/lib/api/workspaces'
@@ -20,6 +21,7 @@ export default function InviteAcceptPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { isAuthenticated, isLoading, loginWithGoogle } = useAuth()
+  const queryClient = useQueryClient()
 
   const workspaceName = searchParams.get('workspace') ?? 'a workspace'
   const inviterName = searchParams.get('inviter') ?? 'Someone'
@@ -42,7 +44,13 @@ export default function InviteAcceptPage() {
   const tryAccept = () => {
     setState('accepting')
     acceptInvitation(params.token)
-      .then(() => router.replace('/chat'))
+      .then(async () => {
+        // Refresh me so the new workspace appears immediately after redirect
+        await queryClient.invalidateQueries({ queryKey: ['me'] })
+        queryClient.invalidateQueries({ queryKey: ['members'] })
+        queryClient.invalidateQueries({ queryKey: ['invitations'] })
+        router.replace('/chat')
+      })
       .catch((err) => {
         const status = err?.response?.status
         if (status === 400) setState('already_member')
