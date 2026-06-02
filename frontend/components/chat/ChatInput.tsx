@@ -77,7 +77,7 @@ export function ChatInput({ value, onChange, onSubmit, disabled, placeholder }: 
         {/* Model label + send button */}
         <div className="flex items-center gap-2 shrink-0 mb-0.5">
           <span
-            title={modelInfo ? `Provider: ${modelInfo.provider}` : undefined}
+            title={modelLabel}
             className="font-mono text-[10px] text-muted-foreground/60 hidden sm:block select-none cursor-default"
           >
             {modelLabel}

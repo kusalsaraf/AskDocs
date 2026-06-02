@@ -15,6 +15,14 @@ dj-rest-auth==6.0.0
 django-allauth==0.63.3
 requests==2.32.3
 cryptography==42.0.8
+# Document parsing
+# unstructured: fast PDF parsing only. For hi_res mode, install the [local-inference]
+# extras which pulls in detectron2 + PyTorch (~2GB additional). See docs/parsers.md.
+unstructured[pdf]==0.14.4
+pdfminer.six==20231228   # pin: 20251230+ removed PSSyntaxError, incompatible with unstructured 0.14.x
+pypdf==4.2.0
+python-docx==1.1.2
+tiktoken==0.7.0
 google-generativeai==0.7.0
 openai==1.30.5
 anthropic==0.30.0

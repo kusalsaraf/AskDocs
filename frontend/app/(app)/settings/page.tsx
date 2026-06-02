@@ -16,7 +16,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { useWorkspace } from '@/lib/hooks/useWorkspace'
 import {
   useProvider, useSupportedProviders, useSaveProvider,
-  useTestProvider, useDeleteProvider,
+  useTestProvider,
 } from '@/lib/hooks/useProviders'
 import { listMembers, listInvitations, inviteMember, removeMember } from '@/lib/api/workspaces'
 import { updateWorkspace } from '@/lib/api/workspaces'

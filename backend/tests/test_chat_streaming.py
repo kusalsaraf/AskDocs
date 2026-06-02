@@ -74,8 +74,8 @@ def test_stream_chat_yields_token_and_complete(
          patch("apps.chat.services._is_using_platform_default", return_value=True):
 
         mock_provider = MagicMock()
-        mock_provider.provider_name = "gemini"
-        mock_provider._model_name = "gemini-1.5-flash"
+        mock_provider.provider_name = "openai"
+        mock_provider._model_name = "gpt-4o-mini"
         mock_provider.stream.return_value = iter(mock_stream)
         mock_provider_fn.return_value = mock_provider
 
@@ -117,8 +117,8 @@ def test_assistant_message_persisted(auth_client: APIClient, workspace: Any, use
          patch("apps.chat.services._is_using_platform_default", return_value=True):
 
         mock_provider = MagicMock()
-        mock_provider.provider_name = "gemini"
-        mock_provider._model_name = "gemini-1.5-flash"
+        mock_provider.provider_name = "openai"
+        mock_provider._model_name = "gpt-4o-mini"
         mock_provider.stream.return_value = iter(mock_stream)
         mock_provider_fn.return_value = mock_provider
 
@@ -151,8 +151,8 @@ def test_cache_hit_returns_is_cached_true(
     cached = CachedResponse(
         full_text="Cached answer [1].",
         citations={1: str(chunk.chunk_id)},
-        provider_name="gemini",
-        model_name="gemini-1.5-flash",
+        provider_name="openai",
+        model_name="gpt-4o-mini",
         prompt_tokens=10,
         completion_tokens=5,
     )

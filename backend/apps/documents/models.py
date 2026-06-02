@@ -36,6 +36,13 @@ class Document(BaseModel):
         default=Status.PENDING,
     )
     error_message = models.TextField(blank=True)
+    parser_strategy = models.CharField(
+        max_length=20,
+        choices=[("fast", "Fast"), ("hi_res", "Hi-Res"), ("auto", "Auto")],
+        null=True,
+        blank=True,
+        help_text="Per-document strategy override. Null = use UNSTRUCTURED_DEFAULT_STRATEGY env var.",
+    )
 
     class Meta:
         indexes = [
@@ -63,6 +70,12 @@ class DocumentChunk(models.Model):
     content = models.TextField()
     chunk_index = models.PositiveIntegerField()
     page_number = models.PositiveIntegerField(null=True, blank=True)
+    parser_element_type = models.CharField(
+        max_length=50,
+        blank=True,
+        default="",
+        help_text="Element type from the parser: Title, NarrativeText, Table, ListItem, etc.",
+    )
     embedding = VectorField(dimensions=768)
     created_at = models.DateTimeField(auto_now_add=True)
 

@@ -1,12 +1,22 @@
+from unittest.mock import patch
+
 import pytest
 
 
 @pytest.mark.django_db
 def test_factory_returns_platform_default_when_no_config(workspace):
+    from django.test import override_settings
+
     from apps.providers.llm.default import PlatformDefaultProvider
     from apps.providers.llm.factory import get_llm_provider_for_workspace
 
-    provider = get_llm_provider_for_workspace(workspace)
+    with override_settings(
+        DEFAULT_PLATFORM_PROVIDER="openai",
+        DEFAULT_PLATFORM_OPENAI_API_KEY="sk-test-key",
+        DEFAULT_PLATFORM_OPENAI_MODEL="gpt-4o-mini",
+    ), patch("openai.OpenAI"):
+        provider = get_llm_provider_for_workspace(workspace)
+
     assert isinstance(provider, PlatformDefaultProvider)
 
 

@@ -130,7 +130,7 @@ function HeroChatMock() {
             {/* User bubble */}
             <div className="flex justify-end">
               <div className="max-w-[72%] rounded-xl rounded-tr-sm bg-indigo-500/15 px-3.5 py-2.5 text-xs leading-relaxed text-foreground ring-1 ring-indigo-500/20">
-                What's our refund policy for monthly plans?
+                What&apos;s our refund policy for monthly plans?
               </div>
             </div>
 
@@ -144,7 +144,7 @@ function HeroChatMock() {
                   According to the Customer Agreement, monthly subscribers are eligible for a full refund within{" "}
                   <strong className="text-foreground">14 days</strong> of their billing date
                   {" "}<span className="inline-flex items-center justify-center rounded bg-indigo-500/15 px-1 font-mono text-[10px] font-semibold text-indigo-400 ring-1 ring-indigo-500/20 relative -top-px">1</span>.
-                  {" "}After this window, refunds are issued at support's discretion for technical issues or billing errors.
+                  {" "}After this window, refunds are issued at support&apos;s discretion for technical issues or billing errors.
                 </p>
                 <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
                   <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded bg-rose-500/15">
@@ -181,7 +181,7 @@ function HeroChatMock() {
             </div>
             <p className="text-[10px] font-medium leading-tight text-foreground/70">Customer Agreement.pdf</p>
             <p className="mt-1 line-clamp-3 text-[9px] leading-relaxed text-muted-foreground/60">
-              "…subscribers on a monthly billing cycle may request a full refund within fourteen (14) calendar days…"
+              &quot;…subscribers on a monthly billing cycle may request a full refund within fourteen (14) calendar days…&quot;
             </p>
           </div>
           <div className="mt-2 space-y-1.5 opacity-40">
@@ -278,7 +278,7 @@ export default function LandingPage() {
           Built for B2B teams · Multi-tenant by design
         </div>
         <h1 className="mx-auto max-w-3xl text-4xl font-semibold leading-[1.15] tracking-tight text-foreground sm:text-5xl">
-          Chat with your company's documents.
+          Chat with your company&apos;s documents.
           <br className="hidden sm:block" />
           Get answers with sources.
         </h1>

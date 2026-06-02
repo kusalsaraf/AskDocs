@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import {
-  Share2, MoreHorizontal, Pencil, Check, AlertCircle,
+  Share2, MoreHorizontal, Pencil, Check,
 } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { ChatMessage } from '@/components/chat/ChatMessage'
@@ -21,7 +21,6 @@ import { useWorkspace } from '@/lib/hooks/useWorkspace'
 import { useConversation, useUpdateTitle, useMessageSources } from '@/lib/hooks/useChat'
 import { sendMessageStream } from '@/lib/api/chat'
 import type { Message, Citation } from '@/lib/types/domain'
-import { cn } from '@/lib/utils'
 
 export default function ConversationPage() {
   const params       = useParams<{ id: string }>()

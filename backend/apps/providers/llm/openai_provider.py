@@ -36,13 +36,16 @@ class OpenAIProvider(BaseLLMProvider):
 
     def __init__(self, config: ProviderConfig | None) -> None:
         super().__init__(config)
-        assert config is not None, "OpenAIProvider requires a ProviderConfig"
-        api_key = decrypt_api_key(bytes(config.encrypted_api_key))
+        if config is None:
+            api_key = settings.DEFAULT_PLATFORM_OPENAI_API_KEY
+            self._model_name = settings.DEFAULT_PLATFORM_OPENAI_MODEL
+        else:
+            api_key = decrypt_api_key(bytes(config.encrypted_api_key))
+            self._model_name = config.model_name
         self._client = openai.OpenAI(
             api_key=api_key,
             timeout=settings.PROVIDER_REQUEST_TIMEOUT_SECONDS,
         )
-        self._model_name = config.model_name
 
     def _call(self, messages: list[dict[str, str]], max_tokens: int) -> Any:
         return self._client.chat.completions.create(
@@ -57,7 +60,7 @@ class OpenAIProvider(BaseLLMProvider):
             "OpenAI test_connection start",
             extra={
                 "provider": "openai",
-                "workspace_id": str(self.config.workspace_id),
+                "workspace_id": str(self.config.workspace_id) if self.config else "platform-default",
                 "model": self._model_name,
             },
         )
@@ -94,4 +97,20 @@ class OpenAIProvider(BaseLLMProvider):
         )
 
     def stream(self, messages: list[Message], **kwargs: Any) -> Iterator[StreamChunk]:
-        raise NotImplementedError("Streaming will be implemented in Phase 5")
+        max_tokens = kwargs.get("max_tokens", self.config.max_tokens if self.config else 2048)
+        temperature = kwargs.get("temperature", self.config.temperature if self.config else 0.7)
+        openai_messages = [{"role": m.role, "content": m.content} for m in messages]
+        response = self._client.chat.completions.create(
+            model=self._model_name,
+            messages=openai_messages,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            stream=True,
+        )
+        for chunk in response:
+            delta = chunk.choices[0].delta.content if chunk.choices else None
+            finish = chunk.choices[0].finish_reason if chunk.choices else None
+            if delta:
+                yield StreamChunk(delta=delta)
+            if finish:
+                yield StreamChunk(delta="", finish_reason=finish)
