@@ -19,8 +19,7 @@ export interface ApiWorkspace {
   created_at: string
 }
 
-export interface MeResponse {
-  user: ApiUser
+export type MeResponse = ApiUser & {
   workspaces: ApiWorkspace[]
 }
 
@@ -115,7 +114,8 @@ export interface ApiConversation {
 
 export interface ApiMember {
   user_id: string
-  display_name: string
+  first_name: string
+  last_name: string
   email: string
   avatar_url: string | null
   role: 'admin' | 'member' | 'viewer'
@@ -126,13 +126,15 @@ export interface ApiPendingInvitation {
   id: string
   email: string
   role: 'admin' | 'member' | 'viewer'
-  created_at: string
+  token: string
+  invited_at: string
 }
 
 export interface ApiQuota {
-  user_limit: number
-  user_used: number
-  user_remaining: number
+  user_messages_limit: number
+  user_messages_used_today: number
+  using_platform_default: boolean
+  global_budget_remaining: number | null
 }
 
 export interface ApiChunkSource {

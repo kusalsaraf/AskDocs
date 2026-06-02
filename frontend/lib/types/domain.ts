@@ -201,9 +201,26 @@ export interface ProviderConfig {
   apiKeyLast4?: string
 }
 
+const _BACKEND_TO_FRONTEND: Record<string, ProviderKey> = {
+  gemini: 'google-gemini',
+  azure:  'azure-openai',
+}
+const _FRONTEND_TO_BACKEND: Partial<Record<ProviderKey, string>> = {
+  'google-gemini': 'gemini',
+  'azure-openai':  'azure',
+}
+
+export function backendToProviderKey(name: string): ProviderKey {
+  return (_BACKEND_TO_FRONTEND[name] ?? name) as ProviderKey
+}
+
+export function providerKeyToBackend(key: ProviderKey): string {
+  return _FRONTEND_TO_BACKEND[key] ?? key
+}
+
 export function adaptProviderConfig(api: ApiProviderConfig): ProviderConfig {
   return {
-    provider: api.provider_name as ProviderKey,
+    provider: backendToProviderKey(api.provider_name),
     model: api.model_name,
     temperature: api.temperature,
     maxTokens: api.max_tokens,
@@ -224,15 +241,13 @@ export interface WorkspaceMember {
 }
 
 export function adaptMember(api: ApiMember): WorkspaceMember {
-  const initials = api.display_name
-    .split(' ')
-    .map((p) => p[0] ?? '')
-    .join('')
-    .toUpperCase()
-    .substring(0, 2)
+  const displayName = `${api.first_name} ${api.last_name}`.trim() || api.email
+  const initials = (
+    (api.first_name?.[0] ?? '') + (api.last_name?.[0] ?? '')
+  ).toUpperCase() || api.email[0].toUpperCase()
   return {
     id: api.user_id,
-    user: { name: api.display_name, email: api.email, avatarInitials: initials },
+    user: { name: displayName, email: api.email, avatarInitials: initials },
     role: api.role,
     joinedAt: new Date(api.joined_at),
   }
@@ -242,6 +257,7 @@ export interface PendingInvite {
   id: string
   email: string
   role: 'admin' | 'member' | 'viewer'
+  token: string
   invitedAt: Date
 }
 
@@ -250,7 +266,8 @@ export function adaptInvitation(api: ApiPendingInvitation): PendingInvite {
     id: api.id,
     email: api.email,
     role: api.role,
-    invitedAt: new Date(api.created_at),
+    token: api.token,
+    invitedAt: new Date(api.invited_at),
   }
 }
 
