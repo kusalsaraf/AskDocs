@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import {
   CheckCircle2, XCircle, Eye, EyeOff, ChevronDown, ChevronRight,
-  Loader2, UserPlus, MoreHorizontal, Zap, Check,
+  Loader2, UserPlus, MoreHorizontal, Zap, Check, Copy,
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { cn, formatRelativeTime } from '@/lib/utils'
@@ -21,7 +21,7 @@ import {
 import { listMembers, listInvitations, inviteMember, removeMember } from '@/lib/api/workspaces'
 import { updateWorkspace } from '@/lib/api/workspaces'
 import { getQuota } from '@/lib/api/chat'
-import { adaptMember, adaptInvitation, adaptProviderConfig } from '@/lib/types/domain'
+import { adaptMember, adaptInvitation, adaptProviderConfig, backendToProviderKey, providerKeyToBackend } from '@/lib/types/domain'
 import type { ProviderConfig, ProviderKey } from '@/lib/types/domain'
 import type { ApiProviderConfig } from '@/lib/types/api'
 
@@ -144,13 +144,20 @@ function AIProviderTab() {
   // Seed form from live provider config
   useEffect(() => {
     if (activeConfig) {
-      setSelectedProvider(activeConfig.provider_name as ProviderKey)
+      setSelectedProvider(backendToProviderKey(activeConfig.provider_name))
       setConfig(adaptProviderConfig(activeConfig))
+      if (activeConfig.last_test_status === 'ok') {
+        setTestStatus('success')
+        setTestMessage('Previously verified')
+      } else {
+        setTestStatus('idle')
+        setTestMessage('')
+      }
     }
   }, [activeConfig?.provider_name]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleProviderSelect = (key: ProviderKey) => {
-    const sup = supportedMap.get(key)
+    const sup = supportedMap.get(providerKeyToBackend(key))
     setSelectedProvider(key)
     setConfig({
       provider: key, apiKey: '', baseUrl: '', region: AZURE_REGIONS[0],
@@ -160,11 +167,27 @@ function AIProviderTab() {
     setTestMessage('')
   }
 
+  const handleConfigChange = (newConfig: ProviderConfig) => {
+    if (newConfig.apiKey !== config.apiKey) {
+      setTestStatus('idle')
+      setTestMessage('')
+    }
+    setConfig(newConfig)
+  }
+
   const handleTest = async () => {
     setTestStatus('loading')
     setTestMessage('')
     try {
-      const result = await doTest()
+      const result = await doTest({
+        provider_name: providerKeyToBackend(config.provider),
+        api_key:       config.apiKey,
+        model_name:    config.model,
+        temperature:   config.temperature,
+        max_tokens:    config.maxTokens,
+        base_url:      config.baseUrl || undefined,
+        azure_region:  config.region  || undefined,
+      })
       if (result.success) {
         setTestStatus('success')
         setTestMessage(`Connected · ${result.latency_ms}ms`)
@@ -180,7 +203,7 @@ function AIProviderTab() {
 
   const handleSave = async () => {
     await doSave({
-      provider_name: config.provider,
+      provider_name: providerKeyToBackend(config.provider),
       api_key:       config.apiKey,
       model_name:    config.model,
       temperature:   config.temperature,
@@ -191,7 +214,7 @@ function AIProviderTab() {
   }
 
   const activeProviderDef =
-    PROVIDERS.find((p) => p.key === (usingDefault ? 'askdocs-default' : activeConfig?.provider_name)) ??
+    PROVIDERS.find((p) => p.key === (usingDefault ? 'askdocs-default' : backendToProviderKey(activeConfig?.provider_name ?? ''))) ??
     PROVIDERS[0]
 
   if (isLoading) {
@@ -250,7 +273,7 @@ function AIProviderTab() {
               key={p.key}
               provider={p}
               selected={selectedProvider === p.key}
-              hasKey={!usingDefault && activeConfig?.provider_name === p.key}
+              hasKey={!usingDefault && backendToProviderKey(activeConfig?.provider_name ?? '') === p.key}
               onSelect={() => handleProviderSelect(p.key)}
             />
           ))}
@@ -262,13 +285,13 @@ function AIProviderTab() {
         <ConfigForm
           provider={selectedProvider}
           config={config}
-          onChange={setConfig}
+          onChange={handleConfigChange}
           testStatus={testStatus}
           testMessage={testMessage}
           isSaving={isSaving}
           onTest={handleTest}
           onSave={handleSave}
-          supportedModels={supportedMap.get(selectedProvider)?.available_models ?? []}
+          supportedModels={supportedMap.get(providerKeyToBackend(selectedProvider))?.available_models ?? []}
         />
       ) : (
         <div className="rounded-xl border border-border bg-card/50 px-5 py-4 flex items-center gap-3">
@@ -504,7 +527,13 @@ function ConfigForm({
             {testStatus === 'loading' && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             Test connection
           </Button>
-          <Button size="sm" onClick={onSave} disabled={isSaving} className="gap-2">
+          <Button
+            size="sm"
+            onClick={onSave}
+            disabled={isSaving || testStatus !== 'success'}
+            className="gap-2"
+            title={testStatus !== 'success' ? 'Test the connection first' : undefined}
+          >
             {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             Save configuration
           </Button>
@@ -707,7 +736,10 @@ function MembersTab() {
                     {formatRelativeTime(inv.invitedAt)}
                   </span>
                 </div>
-                <RoleBadge role={inv.role} />
+                <div className="flex items-center gap-2">
+                  <RoleBadge role={inv.role} />
+                  <CopyLinkButton token={inv.token} />
+                </div>
               </div>
             ))}
           </div>
@@ -735,20 +767,23 @@ function UsageTab() {
     )
   }
 
-  const queryPct = (quota.user_used / quota.user_limit) * 100
+  const used      = quota.user_messages_used_today
+  const limit     = quota.user_messages_limit
+  const remaining = Math.max(0, limit - used)
+  const queryPct  = limit > 0 ? (used / limit) * 100 : 0
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-8 space-y-8">
       <div className="grid grid-cols-3 gap-4">
         <StatCard
           label="Messages used"
-          value={quota.user_used.toLocaleString()}
-          sub={`of ${quota.user_limit.toLocaleString()} daily limit`}
+          value={used.toLocaleString()}
+          sub={`of ${limit.toLocaleString()} daily limit`}
           pct={queryPct}
         />
         <StatCard
           label="Remaining today"
-          value={quota.user_remaining.toLocaleString()}
+          value={remaining.toLocaleString()}
         />
         <StatCard
           label="Usage"
@@ -800,6 +835,29 @@ function RoleBadge({ role }: { role: 'admin' | 'member' | 'viewer' }) {
     <span className={cn('inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium capitalize', styles[role])}>
       {role}
     </span>
+  )
+}
+
+function CopyLinkButton({ token }: { token: string }) {
+  const [copied, setCopied] = React.useState(false)
+
+  const handleCopy = async () => {
+    const url = `${window.location.origin}/invite/${token}`
+    await navigator.clipboard.writeText(url)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <button
+      onClick={handleCopy}
+      title="Copy invite link"
+      className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+    >
+      {copied
+        ? <Check className="h-3.5 w-3.5 text-emerald-400" />
+        : <Copy className="h-3.5 w-3.5" />}
+    </button>
   )
 }
 
