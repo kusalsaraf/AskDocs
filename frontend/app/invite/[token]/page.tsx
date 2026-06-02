@@ -31,6 +31,7 @@ export default function InviteAcceptPage() {
   const [state, setState] = useState<PageState>('loading')
 
   const handleGoogleLogin = useGoogleLogin({
+    prompt: 'select_account',
     hint: inviteeEmail,   // pre-select the invited email in the Google account picker
     onSuccess: async (tokenResponse) => {
       setState('accepting')

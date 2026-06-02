@@ -84,6 +84,7 @@ function SignInContent() {
 
   const handleGoogle = useGoogleLogin({
     flow: 'implicit',
+    prompt: 'select_account',
     onSuccess: async (tokenResponse) => {
       setError(null)
       try {
