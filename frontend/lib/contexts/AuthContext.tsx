@@ -54,6 +54,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem('pending_invite')
         try {
           await acceptInvitation(pendingToken)
+          // Re-fetch me so the new workspace appears in the user's session
+          await queryClient.invalidateQueries({ queryKey: ['me'] })
           queryClient.invalidateQueries({ queryKey: ['members'] })
           queryClient.invalidateQueries({ queryKey: ['invitations'] })
         } catch {
