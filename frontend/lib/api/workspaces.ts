@@ -2,8 +2,8 @@ import { apiClient } from './client'
 import type { ApiWorkspace, ApiMember, ApiPendingInvitation } from '@/lib/types/api'
 
 export async function listWorkspaces(): Promise<ApiWorkspace[]> {
-  const { data } = await apiClient.get<ApiWorkspace[]>('/workspaces/')
-  return data
+  const { data } = await apiClient.get<{ results: ApiWorkspace[] }>('/workspaces/')
+  return data.results
 }
 
 export async function createWorkspace(name: string): Promise<ApiWorkspace> {
@@ -17,8 +17,8 @@ export async function updateWorkspace(id: string, name: string): Promise<ApiWork
 }
 
 export async function listMembers(workspaceId: string): Promise<ApiMember[]> {
-  const { data } = await apiClient.get<ApiMember[]>(`/workspaces/${workspaceId}/members/`)
-  return data
+  const { data } = await apiClient.get<{ results: ApiMember[] }>(`/workspaces/${workspaceId}/members/`)
+  return data.results
 }
 
 export async function removeMember(workspaceId: string, userId: string): Promise<void> {
@@ -42,8 +42,12 @@ export async function inviteMember(
 }
 
 export async function listInvitations(workspaceId: string): Promise<ApiPendingInvitation[]> {
-  const { data } = await apiClient.get<ApiPendingInvitation[]>(
+  const { data } = await apiClient.get<{ results: ApiPendingInvitation[] }>(
     `/workspaces/${workspaceId}/invitations/`
   )
-  return data
+  return data.results
+}
+
+export async function acceptInvitation(token: string): Promise<void> {
+  await apiClient.post(`/invitations/${token}/accept/`)
 }
