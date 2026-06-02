@@ -614,14 +614,14 @@ function MembersTab() {
     queryFn:  () => listMembers(activeWorkspace!.id),
     enabled:  !!activeWorkspace,
     staleTime: 0,
-    refetchInterval: 15_000,
+    refetchInterval: 10_000,
   })
   const { data: rawInvites = [] } = useQuery({
     queryKey: ['invitations', activeWorkspace?.id],
     queryFn:  () => listInvitations(activeWorkspace!.id),
     enabled:  !!activeWorkspace,
     staleTime: 0,
-    refetchInterval: 15_000,
+    refetchInterval: 5_000,
   })
 
   const members = rawMembers.map(adaptMember)
