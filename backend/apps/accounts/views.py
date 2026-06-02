@@ -26,3 +26,5 @@ class GoogleLoginView(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
     client_class = OAuth2Client
     callback_url = "postmessage"
+    authentication_classes = []   # public endpoint — no JWT required
+    permission_classes = []

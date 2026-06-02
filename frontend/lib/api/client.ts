@@ -5,10 +5,15 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api/v
 
 export const apiClient = axios.create({ baseURL: BASE_URL })
 
-// Inject Bearer token on every request
+// Inject Bearer token on every request except public auth endpoints
+const PUBLIC_PATHS = ['/auth/google/', '/auth/token/refresh/', '/auth/login/']
+
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const token = getAccessToken()
-  if (token) config.headers.Authorization = `Bearer ${token}`
+  const isPublic = PUBLIC_PATHS.some((p) => config.url?.includes(p))
+  if (!isPublic) {
+    const token = getAccessToken()
+    if (token) config.headers.Authorization = `Bearer ${token}`
+  }
   return config
 })
 
