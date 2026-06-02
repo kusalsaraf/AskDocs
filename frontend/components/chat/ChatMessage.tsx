@@ -1,15 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
-import { ThumbsUp, ThumbsDown, Copy, RotateCcw, Sparkles, Check } from "lucide-react";
-import { Message, Citation } from "@/lib/types";
+import { ThumbsUp, ThumbsDown, Copy, RotateCcw, Sparkles, Check, AlertCircle } from "lucide-react";
+import type { Message, Citation } from "@/lib/types/domain";
 import { CitationBadge } from "./CitationBadge";
 import { cn } from "@/lib/utils";
 
 interface ChatMessageProps {
-  message: Message;
-  activeCitationId: number | null;
-  onCitationClick: (citation: Citation) => void;
+  message: Message
+  activeCitationId: number | null
+  onCitationClick: (citation: Citation) => void
 }
 
 export function ChatMessage({ message, activeCitationId, onCitationClick }: ChatMessageProps) {
@@ -50,6 +50,14 @@ export function ChatMessage({ message, activeCitationId, onCitationClick }: Chat
               onCitationClick={onCitationClick}
             />
           </div>
+
+          {/* Stream error */}
+          {message.streamError && (
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-rose-400">
+              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+              {message.streamError}
+            </div>
+          )}
 
           {/* Action row — visible on group hover */}
           {!message.isStreaming && (

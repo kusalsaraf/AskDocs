@@ -2,9 +2,7 @@
 
 import React from "react";
 import { X, FileText, ExternalLink } from "lucide-react";
-import { Citation } from "@/lib/types";
-import { formatFileSize } from "@/lib/utils";
-import { RelativeTime } from "@/components/ui/relative-time";
+import type { Citation } from "@/lib/types/domain";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -15,9 +13,6 @@ interface SourcePanelProps {
 
 export function SourcePanel({ citation, onClose }: SourcePanelProps) {
   if (!citation) return null;
-
-  // Split excerpt at the highlighted text to render the highlight
-  const parts = citation.excerpt.split(citation.highlightedText);
 
   return (
     <aside
@@ -37,7 +32,7 @@ export function SourcePanel({ citation, onClose }: SourcePanelProps) {
               {citation.documentName}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Page {citation.pageNumber}
+              {citation.pageNumber != null ? `Page ${citation.pageNumber}` : 'Unknown page'}
             </p>
           </div>
         </div>
@@ -57,29 +52,8 @@ export function SourcePanel({ citation, onClose }: SourcePanelProps) {
         </p>
         <div className="rounded-lg bg-muted/60 border border-border/40 p-3.5">
           <p className="text-sm text-foreground/70 leading-relaxed whitespace-pre-wrap">
-            {parts.map((part, i) => (
-              <React.Fragment key={i}>
-                {part}
-                {i < parts.length - 1 && (
-                  <mark className="cited-highlight not-italic">
-                    {citation.highlightedText}
-                  </mark>
-                )}
-              </React.Fragment>
-            ))}
+            {citation.excerpt || 'No excerpt available.'}
           </p>
-        </div>
-
-        {/* Metadata */}
-        <div className="mt-5 space-y-2.5">
-          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-            Document details
-          </p>
-          <div className="space-y-2">
-            <MetaRow label="Uploaded" value={<RelativeTime date={citation.uploadedAt} />} />
-            <MetaRow label="Size" value={formatFileSize(citation.fileSize)} />
-            <MetaRow label="By" value={citation.uploadedBy.name} />
-          </div>
         </div>
       </div>
 
@@ -94,13 +68,3 @@ export function SourcePanel({ citation, onClose }: SourcePanelProps) {
   );
 }
 
-function MetaRow({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="text-xs text-foreground/70 font-medium truncate max-w-[160px] text-right">
-        {value}
-      </span>
-    </div>
-  );
-}
