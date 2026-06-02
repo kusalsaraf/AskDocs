@@ -79,8 +79,21 @@ const selectCls = cn(
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<TabKey>('ai-provider')
   const { activeWorkspace } = useWorkspace()
+
+  // Persist active tab in the URL hash so it survives page refresh
+  const getTabFromHash = (): TabKey => {
+    if (typeof window === 'undefined') return 'ai-provider'
+    const hash = window.location.hash.replace('#', '') as TabKey
+    return TABS.some((t) => t.key === hash) ? hash : 'ai-provider'
+  }
+
+  const [activeTab, setActiveTab] = useState<TabKey>(getTabFromHash)
+
+  const handleTabChange = (key: TabKey) => {
+    setActiveTab(key)
+    window.history.replaceState(null, '', `#${key}`)
+  }
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -95,7 +108,7 @@ export default function SettingsPage() {
         {TABS.map((tab) => (
           <button
             key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
+            onClick={() => handleTabChange(tab.key)}
             className={cn(
               'relative px-3 py-3 text-sm transition-colors',
               activeTab === tab.key ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/70'
@@ -601,12 +614,14 @@ function MembersTab() {
     queryFn:  () => listMembers(activeWorkspace!.id),
     enabled:  !!activeWorkspace,
     staleTime: 0,
+    refetchInterval: 15_000,
   })
   const { data: rawInvites = [] } = useQuery({
     queryKey: ['invitations', activeWorkspace?.id],
     queryFn:  () => listInvitations(activeWorkspace!.id),
     enabled:  !!activeWorkspace,
     staleTime: 0,
+    refetchInterval: 15_000,
   })
 
   const members = rawMembers.map(adaptMember)
