@@ -10,6 +10,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { useUploadDocument } from "@/lib/hooks/useDocuments";
+import { useWorkspace } from "@/lib/hooks/useWorkspace";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -128,6 +130,9 @@ interface UploadModalProps {
 }
 
 export function UploadModal({ open, onOpenChange }: UploadModalProps) {
+  const { activeWorkspace } = useWorkspace()
+  const { mutateAsync: doUpload } = useUploadDocument(activeWorkspace?.id)
+
   const [files, setFiles] = useState<StagedFile[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
@@ -191,55 +196,48 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
     }
   };
 
-  const mockUpload = (id: string, shouldFail: boolean): Promise<"uploaded" | "failed"> =>
-    new Promise((resolve) => {
-      // Failing file animates to 65% over 1.8s, then fails
-      const duration = shouldFail ? 1800 : 2000 + Math.random() * 1000;
-      const peakProgress = shouldFail ? 65 : 100;
-      const start = Date.now();
-
-      const tick = () => {
-        const ratio = Math.min((Date.now() - start) / duration, 1);
-        const progress = Math.round(ratio * peakProgress);
-
-        setFiles((prev) =>
-          prev.map((f) => (f.id === id ? { ...f, status: "uploading", progress } : f))
-        );
-
-        if (ratio >= 1) {
-          if (shouldFail) {
-            setFiles((prev) =>
-              prev.map((f) => (f.id === id ? { ...f, status: "failed", progress: 0, error: "Server error" } : f))
-            );
-            resolve("failed");
-          } else {
-            setFiles((prev) =>
-              prev.map((f) => (f.id === id ? { ...f, status: "uploaded", progress: 100 } : f))
-            );
-            resolve("uploaded");
-          }
-        } else {
-          requestAnimationFrame(tick);
-        }
-      };
-
-      requestAnimationFrame(tick);
-    });
-
   const handleUpload = async () => {
     const valid = files.filter((f) => !f.validationError);
     if (!valid.length || isUploading) return;
     setIsUploading(true);
 
-    // Mock: second file fails when uploading 2+ files
-    const results = await Promise.all(
-      valid.map((f, i) => mockUpload(f.id, valid.length >= 2 && i === 1))
+    const results = await Promise.allSettled(
+      valid.map((sf) =>
+        doUpload({
+          file: sf.file,
+          onProgress: (pct) =>
+            setFiles((prev) =>
+              prev.map((f) =>
+                f.id === sf.id ? { ...f, status: "uploading", progress: pct } : f
+              )
+            ),
+        })
+          .then(() => {
+            setFiles((prev) =>
+              prev.map((f) =>
+                f.id === sf.id ? { ...f, status: "uploaded", progress: 100 } : f
+              )
+            );
+            return "uploaded" as const;
+          })
+          .catch((err: Error) => {
+            setFiles((prev) =>
+              prev.map((f) =>
+                f.id === sf.id
+                  ? { ...f, status: "failed", progress: 0, error: err.message }
+                  : f
+              )
+            );
+            return "failed" as const;
+          })
+      )
     );
 
     setIsUploading(false);
-    if (results.every((r) => r === "uploaded")) {
-      setSuccessCount(results.length);
-    }
+    const allOk = results.every(
+      (r) => r.status === "fulfilled" && r.value === "uploaded"
+    );
+    if (allOk) setSuccessCount(valid.length);
   };
 
   const hasFiles = files.length > 0;
