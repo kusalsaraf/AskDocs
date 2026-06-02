@@ -26,10 +26,12 @@ export default function InviteAcceptPage() {
 
   const workspaceName = searchParams.get('workspace') ?? 'a workspace'
   const inviterName = searchParams.get('inviter') ?? 'Someone'
+  const inviteeEmail = searchParams.get('email') ?? undefined
 
   const [state, setState] = useState<PageState>('loading')
 
   const handleGoogleLogin = useGoogleLogin({
+    hint: inviteeEmail,   // pre-select the invited email in the Google account picker
     onSuccess: async (tokenResponse) => {
       setState('accepting')
       try {
@@ -94,8 +96,13 @@ export default function InviteAcceptPage() {
                 Join {workspaceName}
               </h1>
               <p className="mt-1 text-sm text-muted-foreground">
-                {inviterName} invited you to collaborate on AskDocs. Sign in to accept.
+                {inviterName} invited{inviteeEmail ? <> <span className="font-mono text-xs text-foreground/80">{inviteeEmail}</span></> : ' you'} to collaborate on AskDocs.
               </p>
+              {inviteeEmail && (
+                <p className="mt-1 text-xs text-muted-foreground/60">
+                  Sign in with the Google account for {inviteeEmail}.
+                </p>
+              )}
             </div>
             <button
               onClick={() => handleGoogleLogin()}

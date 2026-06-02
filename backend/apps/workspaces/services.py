@@ -139,7 +139,7 @@ def create_invitation(
         inviter_name = getattr(invited_by, "display_name", None) or invited_by.email
         accept_url = (
             f"{settings.FRONTEND_URL}/invite/{invitation.token}"
-            f"?workspace={workspace.name}&inviter={inviter_name}"
+            f"?workspace={workspace.name}&inviter={inviter_name}&email={email}"
         )
         send_invitation_email(
             to=email,
@@ -213,7 +213,7 @@ def resend_invitation(invitation_id: UUID, workspace: Any, acting_user: Any) -> 
     inviter_name = getattr(acting_user, "display_name", None) or acting_user.email
     accept_url = (
         f"{settings.FRONTEND_URL}/invite/{invitation.token}"
-        f"?workspace={workspace.name}&inviter={inviter_name}"
+        f"?workspace={workspace.name}&inviter={inviter_name}&email={invitation.email}"
     )
     send_invitation_email(
         to=invitation.email,
