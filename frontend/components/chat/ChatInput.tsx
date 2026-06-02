@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useRef, useEffect, useState, KeyboardEvent } from "react";
+import React, { useRef, useEffect, KeyboardEvent } from "react";
 import { Paperclip, ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getActiveModel } from "@/lib/api";
-import { ModelInfo } from "@/lib/types";
+import { useWorkspace } from "@/lib/hooks/useWorkspace";
+import { useProvider } from "@/lib/hooks/useProviders";
 
 interface ChatInputProps {
   value: string;
@@ -16,12 +16,8 @@ interface ChatInputProps {
 
 export function ChatInput({ value, onChange, onSubmit, disabled, placeholder }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [modelInfo, setModelInfo] = useState<ModelInfo | null>(null);
-
-  // Fetch active model on mount
-  useEffect(() => {
-    getActiveModel().then(setModelInfo).catch(() => null);
-  }, []);
+  const { activeWorkspace } = useWorkspace();
+  const { data: providerData } = useProvider(activeWorkspace?.id);
 
   // Auto-resize up to 6 lines
   useEffect(() => {
@@ -41,9 +37,11 @@ export function ChatInput({ value, onChange, onSubmit, disabled, placeholder }: 
 
   const canSubmit = value.trim().length > 0 && !disabled;
 
-  const modelLabel = modelInfo
-    ? `${modelInfo.model} · ${modelInfo.source === "free-tier" ? "free" : modelInfo.source === "own-key" ? "own key" : "enterprise"}`
-    : "gemini-flash · free";
+  const modelLabel = (() => {
+    if (!providerData) return "loading…";
+    if ("using_platform_default" in providerData) return "platform default";
+    return `${providerData.model_name} · ${providerData.provider_name}`;
+  })();
 
   return (
     <div className="px-4 pb-4 pt-2">
