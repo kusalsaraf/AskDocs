@@ -3,7 +3,8 @@
 import React from "react";
 import { Settings, LogOut, User as UserIcon, Monitor, Sun, Moon, Check, Palette } from "lucide-react";
 import { useTheme } from "next-themes";
-import { User } from "@/lib/types";
+import { useAuth } from "@/lib/hooks/useAuth";
+import type { User } from "@/lib/types/domain";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,7 +23,8 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ user }: UserMenuProps) {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme } = useTheme()
+  const { logout } = useAuth()
 
   return (
     <DropdownMenu>
@@ -88,7 +90,10 @@ export function UserMenu({ user }: UserMenuProps) {
         </DropdownMenuSub>
 
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="gap-2.5 text-rose-400 focus:text-rose-300 focus:bg-rose-500/10">
+        <DropdownMenuItem
+          className="gap-2.5 text-rose-400 focus:text-rose-300 focus:bg-rose-500/10"
+          onClick={() => logout()}
+        >
           <LogOut className="h-4 w-4" />
           Sign out
         </DropdownMenuItem>

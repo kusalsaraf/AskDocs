@@ -1,31 +1,33 @@
-"use client";
+'use client'
 
-import React from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Plus, MoreHorizontal, FileText, PanelLeftClose } from "lucide-react";
-import { ConversationSummary, User, Workspace } from "@/lib/types";
-import { truncate, cn } from "@/lib/utils";
-import { RelativeTime } from "@/components/ui/relative-time";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
-import { UserMenu } from "./UserMenu";
+import React from 'react'
+import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
+import { Plus, MoreHorizontal, FileText, PanelLeftClose } from 'lucide-react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import type { ConversationSummary, User, Workspace } from '@/lib/types/domain'
+import { truncate, cn } from '@/lib/utils'
+import { RelativeTime } from '@/components/ui/relative-time'
+import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { WorkspaceSwitcher } from './WorkspaceSwitcher'
+import { UserMenu } from './UserMenu'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { mockWorkspaces } from "@/lib/mock-data";
+} from '@/components/ui/dropdown-menu'
+import { useWorkspace } from '@/lib/hooks/useWorkspace'
+import { createConversation, deleteConversation } from '@/lib/api/chat'
 
 interface SidebarProps {
-  conversations: ConversationSummary[];
-  activeConversationId?: string;
-  workspace: Workspace;
-  user: User;
-  onCollapse?: () => void;
+  conversations: ConversationSummary[]
+  activeConversationId?: string
+  workspace: Workspace
+  user: User
+  onCollapse?: () => void
 }
 
 export function Sidebar({
@@ -35,7 +37,18 @@ export function Sidebar({
   user,
   onCollapse,
 }: SidebarProps) {
-  const pathname = usePathname();
+  const pathname = usePathname()
+  const router = useRouter()
+  const queryClient = useQueryClient()
+  const { workspaces, setActiveWorkspace } = useWorkspace()
+
+  const { mutate: newChat, isPending: isCreating } = useMutation({
+    mutationFn: () => createConversation(workspace.id),
+    onSuccess: (conv) => {
+      queryClient.invalidateQueries({ queryKey: ['conversations', workspace.id] })
+      router.push(`/chat/${conv.id}`)
+    },
+  })
 
   return (
     <aside className="flex h-full w-[240px] shrink-0 flex-col border-r border-border/80 bg-card">
@@ -60,12 +73,16 @@ export function Sidebar({
 
       {/* New chat button */}
       <div className="px-3 pb-3">
-        <Link href="/chat">
-          <Button variant="default" size="sm" className="w-full gap-2 justify-start">
-            <Plus className="h-3.5 w-3.5" />
-            New chat
-          </Button>
-        </Link>
+        <Button
+          variant="default"
+          size="sm"
+          className="w-full gap-2 justify-start"
+          onClick={() => newChat()}
+          disabled={isCreating}
+        >
+          <Plus className="h-3.5 w-3.5" />
+          New chat
+        </Button>
       </div>
 
       {/* Nav links */}
@@ -73,10 +90,10 @@ export function Sidebar({
         <Link
           href="/documents"
           className={cn(
-            "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors",
-            pathname === "/documents"
-              ? "bg-muted text-foreground"
-              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+            'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors',
+            pathname === '/documents'
+              ? 'bg-muted text-foreground'
+              : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
           )}
         >
           <FileText className="h-3.5 w-3.5" />
@@ -98,6 +115,7 @@ export function Sidebar({
                 key={conv.id}
                 conversation={conv}
                 isActive={conv.id === activeConversationId}
+                workspaceId={workspace.id}
               />
             ))}
           </div>
@@ -106,30 +124,46 @@ export function Sidebar({
 
       {/* Bottom: workspace + user */}
       <div className="border-t border-border/80 px-2 py-2 space-y-0.5">
-        <WorkspaceSwitcher workspace={workspace} workspaces={mockWorkspaces} />
+        <WorkspaceSwitcher
+          workspace={workspace}
+          workspaces={workspaces}
+          onSwitch={setActiveWorkspace}
+        />
         <UserMenu user={user} />
       </div>
     </aside>
-  );
+  )
 }
 
 function ConversationItem({
   conversation,
   isActive,
+  workspaceId,
 }: {
-  conversation: ConversationSummary;
-  isActive: boolean;
+  conversation: ConversationSummary
+  isActive: boolean
+  workspaceId: string
 }) {
+  const queryClient = useQueryClient()
+
+  const { mutate: delConv } = useMutation({
+    mutationFn: () => deleteConversation(workspaceId, conversation.id),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ['conversations', workspaceId] }),
+  })
+
   return (
     <div
       className={cn(
-        "group relative flex items-center gap-1 rounded-lg px-2.5 py-2 cursor-pointer transition-colors",
-        isActive ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+        'group relative flex items-center gap-1 rounded-lg px-2.5 py-2 cursor-pointer transition-colors',
+        isActive
+          ? 'bg-muted text-foreground'
+          : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
       )}
     >
       <Link href={`/chat/${conversation.id}`} className="flex-1 min-w-0 flex flex-col gap-0.5">
         <span className="block truncate text-xs font-medium leading-snug">
-          {truncate(conversation.title, 38)}
+          {truncate(conversation.title || 'New conversation', 38)}
         </span>
         <RelativeTime date={conversation.updatedAt} className="text-[11px] text-muted-foreground/60" />
       </Link>
@@ -139,9 +173,11 @@ function ConversationItem({
         <DropdownMenuTrigger asChild>
           <button
             className={cn(
-              "h-6 w-6 shrink-0 flex items-center justify-center rounded-md transition-colors",
-              "opacity-0 group-hover:opacity-100",
-              isActive ? "text-muted-foreground hover:bg-muted hover:text-foreground" : "text-muted-foreground/60 hover:bg-muted hover:text-foreground/70"
+              'h-6 w-6 shrink-0 flex items-center justify-center rounded-md transition-colors',
+              'opacity-0 group-hover:opacity-100',
+              isActive
+                ? 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                : 'text-muted-foreground/60 hover:bg-muted hover:text-foreground/70'
             )}
             onClick={(e) => e.preventDefault()}
           >
@@ -149,14 +185,15 @@ function ConversationItem({
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent side="right" align="start" className="w-44">
-          <DropdownMenuItem>Rename</DropdownMenuItem>
-          <DropdownMenuItem>Share</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-rose-400 focus:text-rose-300 focus:bg-rose-500/10">
+          <DropdownMenuItem
+            className="text-rose-400 focus:text-rose-300 focus:bg-rose-500/10"
+            onClick={() => delConv()}
+          >
             Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
-  );
+  )
 }
