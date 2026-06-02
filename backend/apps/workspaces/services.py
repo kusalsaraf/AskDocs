@@ -121,15 +121,33 @@ def create_invitation(
     role: str,
     invited_by: Any,
 ) -> "WorkspaceInvitation":
+    from django.conf import settings
+
+    from apps.core.email import send_invitation_email
     from apps.workspaces.models import Membership, WorkspaceInvitation
 
     if role not in [r.value for r in Membership.Role]:
         raise InsufficientWorkspaceRole(detail=f"Invalid role: {role}")
-    invitation, _ = WorkspaceInvitation.objects.get_or_create(
+
+    invitation, created = WorkspaceInvitation.objects.get_or_create(
         workspace=workspace,
         email=email,
         defaults={"role": role, "invited_by": invited_by},
     )
+
+    if created:
+        inviter_name = getattr(invited_by, "display_name", None) or invited_by.email
+        accept_url = (
+            f"{settings.FRONTEND_URL}/invite/{invitation.token}"
+            f"?workspace={workspace.name}&inviter={inviter_name}"
+        )
+        send_invitation_email(
+            to=email,
+            workspace_name=workspace.name,
+            inviter_name=inviter_name,
+            accept_url=accept_url,
+        )
+
     return invitation
 
 
