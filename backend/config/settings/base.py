@@ -147,6 +147,11 @@ CHAT_RESPONSE_CACHE_TTL_SECONDS = env.int("CHAT_RESPONSE_CACHE_TTL_SECONDS", def
 CHAT_DEFAULT_TOP_K = env.int("CHAT_DEFAULT_TOP_K", default=5)
 CHAT_MAX_HISTORY_TURNS = env.int("CHAT_MAX_HISTORY_TURNS", default=6)
 
+# ── Email (Resend) ─────────────────────────────────────────────────────────────
+RESEND_API_KEY = env("RESEND_API_KEY", default="")
+RESEND_FROM_EMAIL = env("RESEND_FROM_EMAIL", default="onboarding@resend.dev")
+FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:3000")
+
 # ── Provider system ───────────────────────────────────────────────────────────
 # No default — raises ImproperlyConfigured at startup if missing
 PROVIDER_ENCRYPTION_KEY = env("PROVIDER_ENCRYPTION_KEY")
