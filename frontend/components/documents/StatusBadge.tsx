@@ -1,12 +1,17 @@
 import React from "react";
 import { Loader2 } from "lucide-react";
-import { DocumentStatus } from "@/lib/types";
+import type { DocumentStatus } from "@/lib/types/domain";
 import { cn } from "@/lib/utils";
 
 const STATUS_CONFIG: Record<
   DocumentStatus,
   { label: string; className: string; spinner?: boolean }
 > = {
+  pending: {
+    label: "Pending",
+    className: "bg-zinc-500/15 text-zinc-400 ring-1 ring-zinc-500/20",
+    spinner: true,
+  },
   ready: {
     label: "Ready",
     className: "bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/20",
