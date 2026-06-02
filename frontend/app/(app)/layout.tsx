@@ -1,35 +1,50 @@
-"use client";
+'use client'
 
-import React, { useState } from "react";
-import { PanelLeft } from "lucide-react";
-import { Sidebar } from "@/components/layout/Sidebar";
-import { mockConversationList, mockWorkspace, mockUser } from "@/lib/mock-data";
-import { usePathname } from "next/navigation";
+import React, { useState } from 'react'
+import { PanelLeft } from 'lucide-react'
+import { usePathname } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
+import { AuthGuard } from '@/components/layout/AuthGuard'
+import { WorkspaceProvider } from '@/lib/contexts/WorkspaceContext'
+import { Sidebar } from '@/components/layout/Sidebar'
+import { useAuth } from '@/lib/hooks/useAuth'
+import { useWorkspace } from '@/lib/hooks/useWorkspace'
+import { listConversations } from '@/lib/api/chat'
+import { adaptConversationSummary } from '@/lib/types/domain'
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const pathname = usePathname();
+function AppShell({ children }: { children: React.ReactNode }) {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const pathname = usePathname()
+  const { user } = useAuth()
+  const { activeWorkspace } = useWorkspace()
 
-  const activeId = pathname.startsWith("/chat/")
-    ? pathname.split("/chat/")[1]
-    : undefined;
+  const activeId = pathname.startsWith('/chat/')
+    ? pathname.split('/chat/')[1]
+    : undefined
+
+  const { data: rawConvs = [] } = useQuery({
+    queryKey: ['conversations', activeWorkspace?.id],
+    queryFn: () => listConversations(activeWorkspace!.id),
+    enabled: !!activeWorkspace,
+    staleTime: 30_000,
+  })
+  const conversations = rawConvs.map(adaptConversationSummary)
+
+  if (!user || !activeWorkspace) return null
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      {/* Sidebar */}
       {!sidebarCollapsed && (
         <Sidebar
-          conversations={mockConversationList}
+          conversations={conversations}
           activeConversationId={activeId}
-          workspace={mockWorkspace}
-          user={mockUser}
+          workspace={activeWorkspace}
+          user={user}
           onCollapse={() => setSidebarCollapsed(true)}
         />
       )}
 
-      {/* Main content */}
       <main className="flex-1 min-w-0 overflow-hidden flex flex-col">
-        {/* Re-open sidebar button — only when collapsed */}
         {sidebarCollapsed && (
           <div className="absolute top-3 left-3 z-10">
             <button
@@ -44,5 +59,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
     </div>
-  );
+  )
+}
+
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <AuthGuard>
+      <WorkspaceProvider>
+        <AppShell>{children}</AppShell>
+      </WorkspaceProvider>
+    </AuthGuard>
+  )
 }
