@@ -2,6 +2,7 @@ import logging
 from typing import Any
 from uuid import UUID
 
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
@@ -156,7 +157,7 @@ class InvitationResendView(APIView):
     def post(
         self, request: Request, workspace_id: UUID, invitation_id: UUID, **kwargs: Any
     ) -> Response:
-        workspace = _get_workspace_or_404(workspace_id)
+        workspace = get_object_or_404(Workspace, id=workspace_id)
         resend_invitation(
             invitation_id=invitation_id,
             workspace=workspace,
