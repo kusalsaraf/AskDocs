@@ -17,9 +17,10 @@ from apps.providers.serializers import (
     ProviderConfigSerializer,
     ProviderConfigWriteSerializer,
     ProviderDefaultResponseSerializer,
+    ProviderTestRequestSerializer,
     ProviderTestResponseSerializer,
 )
-from apps.providers.services import delete_config, get_or_replace_config, test_provider
+from apps.providers.services import delete_config, get_or_replace_config, test_provider, test_provider_from_payload
 from apps.workspaces.models import Membership, Workspace
 
 
@@ -67,7 +68,14 @@ class ProviderTestView(APIView):
     def post(self, request: Request, workspace_id: str) -> Response:
         workspace = _get_admin_workspace(workspace_id, request.user)
         check_test_rate_limit(str(workspace.id))
-        result = test_provider(workspace)
+
+        if request.data:
+            serializer = ProviderTestRequestSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            result = test_provider_from_payload(workspace, serializer.validated_data)
+        else:
+            result = test_provider(workspace)
+
         return Response(
             ProviderTestResponseSerializer(
                 {

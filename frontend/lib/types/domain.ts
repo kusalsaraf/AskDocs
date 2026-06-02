@@ -259,15 +259,19 @@ export interface PendingInvite {
   role: 'admin' | 'member' | 'viewer'
   token: string
   invitedAt: Date
+  expiresAt: Date
 }
 
 export function adaptInvitation(api: ApiPendingInvitation): PendingInvite {
+  const invitedAt = new Date(api.invited_at)
+  const expiresAt = new Date(invitedAt.getTime() + 24 * 60 * 60 * 1000)
   return {
     id: api.id,
     email: api.email,
     role: api.role,
     token: api.token,
-    invitedAt: new Date(api.invited_at),
+    invitedAt,
+    expiresAt,
   }
 }
 

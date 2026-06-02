@@ -10,9 +10,10 @@ interface ChatMessageProps {
   message: Message
   activeCitationId: number | null
   onCitationClick: (citation: Citation) => void
+  onRegenerate?: () => void
 }
 
-export function ChatMessage({ message, activeCitationId, onCitationClick }: ChatMessageProps) {
+export function ChatMessage({ message, activeCitationId, onCitationClick, onRegenerate }: ChatMessageProps) {
   const [copied, setCopied] = useState(false);
   const [feedback, setFeedback] = useState<"up" | "down" | null>(null);
 
@@ -82,7 +83,7 @@ export function ChatMessage({ message, activeCitationId, onCitationClick }: Chat
               <ActionButton
                 icon={<RotateCcw className="h-3.5 w-3.5" />}
                 label="Regenerate"
-                onClick={() => {}}
+                onClick={() => onRegenerate?.()}
               />
             </div>
           )}

@@ -35,9 +35,13 @@ export async function deleteProvider(workspaceId: string): Promise<void> {
   await apiClient.delete(`/workspaces/${workspaceId}/provider/`)
 }
 
-export async function testProvider(workspaceId: string): Promise<ApiTestConnectionResult> {
+export async function testProvider(
+  workspaceId: string,
+  payload?: Parameters<typeof saveProvider>[1]
+): Promise<ApiTestConnectionResult> {
   const { data } = await apiClient.post<ApiTestConnectionResult>(
-    `/workspaces/${workspaceId}/provider/test/`
+    `/workspaces/${workspaceId}/provider/test/`,
+    payload ?? {}
   )
   return data
 }

@@ -2,23 +2,15 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { useParams, useSearchParams, useRouter } from 'next/navigation'
-import {
-  Share2, MoreHorizontal, Pencil, Check,
-} from 'lucide-react'
+import { Pencil, Check } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { ChatMessage } from '@/components/chat/ChatMessage'
 import { ChatInput } from '@/components/chat/ChatInput'
 import { SourcePanel } from '@/components/chat/SourcePanel'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { useWorkspace } from '@/lib/hooks/useWorkspace'
 import { useConversation, useUpdateTitle, useMessageSources } from '@/lib/hooks/useChat'
+import { useDocuments } from '@/lib/hooks/useDocuments'
 import { sendMessageStream } from '@/lib/api/chat'
 import type { Message, Citation } from '@/lib/types/domain'
 
@@ -29,8 +21,10 @@ export default function ConversationPage() {
   const { activeWorkspace } = useWorkspace()
   const queryClient  = useQueryClient()
 
-  const { data: conversation, isLoading } = useConversation(activeWorkspace?.id, params.id)
+  const { data: conversation, isLoading, isError } = useConversation(activeWorkspace?.id, params.id)
   const { mutate: saveTitle } = useUpdateTitle(activeWorkspace?.id, params.id)
+  const { data: documents = [] } = useDocuments(activeWorkspace?.id)
+  const noDocuments = !documents.some((d) => d.status === 'ready')
 
   const [localMessages, setLocalMessages]             = useState<Message[]>([])
   const [title, setTitle]                             = useState('')
@@ -57,10 +51,12 @@ export default function ConversationPage() {
   }, [conversation])
 
   // Auto-send first message from ?q= param (set by chat/page.tsx)
+  // Clear the param immediately to prevent re-send on page reload
   useEffect(() => {
     const q = searchParams.get('q')
     if (q && !hasAutoSent.current && initDone.current) {
       hasAutoSent.current = true
+      router.replace(`/chat/${params.id}`)
       sendMessage(q)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -127,10 +123,20 @@ export default function ConversationPage() {
             )
             scrollToBottom()
           } else if (event.type === 'complete') {
+            const streamCitations: Citation[] = Object.entries(event.citations).map(
+              ([idx, chunkId]) => ({
+                id: parseInt(idx),
+                chunkId: chunkId as string,
+                documentId: '',
+                documentName: '',
+                excerpt: '',
+                pageNumber: null,
+              })
+            )
             setLocalMessages((prev) =>
               prev.map((m) =>
                 m.id === tempAiId
-                  ? { ...m, id: event.message_id, content: accContent, isStreaming: false }
+                  ? { ...m, id: event.message_id, content: accContent, isStreaming: false, citations: streamCitations }
                   : m
               )
             )
@@ -163,6 +169,20 @@ export default function ConversationPage() {
 
   const handleSubmit = useCallback(() => sendMessage(), [sendMessage])
 
+  const handleRegenerate = useCallback(
+    (assistantMsgId: string) => {
+      if (isStreaming) return
+      const idx = localMessages.findIndex((m) => m.id === assistantMsgId)
+      if (idx < 1) return
+      const preceding = localMessages[idx - 1]
+      if (preceding.role !== 'user') return
+      // Drop the assistant message (and its preceding user turn) from local state, then resend
+      setLocalMessages((prev) => prev.slice(0, idx - 1))
+      sendMessage(preceding.content)
+    },
+    [isStreaming, localMessages, sendMessage]
+  )
+
   const activeCitationData =
     activeCitationMsgId
       ? localMessages
@@ -170,7 +190,11 @@ export default function ConversationPage() {
           ?.citations.find((c) => c.id === activeCitationIndex)
       : null
 
-  if (isLoading) {
+  useEffect(() => {
+    if (isError) router.replace('/chat')
+  }, [isError, router])
+
+  if (isLoading || isError) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-indigo-500" />
@@ -218,28 +242,6 @@ export default function ConversationPage() {
             )}
           </div>
 
-          <div className="flex items-center gap-1">
-            <button className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs text-muted-foreground hover:border-border hover:text-foreground transition-colors">
-              <Share2 className="h-3 w-3" />
-              Share
-            </button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground/70 hover:bg-muted transition-colors">
-                  <MoreHorizontal className="h-4 w-4" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-rose-400 focus:text-rose-300 focus:bg-rose-500/10"
-                  onClick={() => router.push('/chat')}
-                >
-                  Delete conversation
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
         </div>
 
         {/* Messages */}
@@ -253,6 +255,11 @@ export default function ConversationPage() {
                   activeCitationMsgId === message.id ? activeCitationIndex : null
                 }
                 onCitationClick={(c) => handleCitationClick(message.id, c)}
+                onRegenerate={
+                  message.role === 'assistant' && !message.isStreaming
+                    ? () => handleRegenerate(message.id)
+                    : undefined
+                }
               />
             ))}
             <div ref={bottomRef} />
@@ -264,6 +271,7 @@ export default function ConversationPage() {
           onChange={setInput}
           onSubmit={handleSubmit}
           disabled={isStreaming}
+          noDocuments={noDocuments}
         />
       </div>
 

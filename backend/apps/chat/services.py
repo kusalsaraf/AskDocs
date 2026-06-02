@@ -246,6 +246,7 @@ def stream_chat_response(
             "content": c.content,
             "score": c.score,
             "document_id": str(c.document_id),
+            "document_filename": c.document_filename,
             "page_number": c.page_number,
         }
         for c in chunks
@@ -314,6 +315,7 @@ def _persist_assistant_message(
                 "content": c.content,
                 "score": c.score,
                 "document_id": str(c.document_id),
+                "document_filename": c.document_filename,
                 "page_number": c.page_number,
             }
             for c in chunks

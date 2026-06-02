@@ -12,10 +12,10 @@ import type {
 export async function listConversations(
   workspaceId: string
 ): Promise<ApiConversationSummary[]> {
-  const { data } = await apiClient.get<ApiConversationSummary[]>(
+  const { data } = await apiClient.get<{ results: ApiConversationSummary[] }>(
     `/workspaces/${workspaceId}/conversations/`
   )
-  return data
+  return data.results
 }
 
 export async function createConversation(
