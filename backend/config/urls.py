@@ -6,6 +6,7 @@ from apps.core.health import health_check
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("accounts/", include("allauth.urls")),  # required for allauth internal URL resolution
     path("api/health/", health_check, name="health-check"),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
