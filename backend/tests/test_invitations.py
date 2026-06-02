@@ -1,4 +1,5 @@
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 from rest_framework.test import APIClient
@@ -62,7 +63,7 @@ def test_admin_can_create_invitation(
 ) -> None:
     response = admin_client.post(
         f"/api/v1/workspaces/{workspace_with_member.id}/invitations/",
-        {"email": "newperson@example.com", "role": "MEMBER"},
+        {"email": "newperson@example.com", "role": "member"},
     )
     assert response.status_code == 201
     data = response.json()
@@ -76,7 +77,7 @@ def test_member_cannot_create_invitation(
 ) -> None:
     response = member_client.post(
         f"/api/v1/workspaces/{workspace_with_member.id}/invitations/",
-        {"email": "someone@example.com", "role": "MEMBER"},
+        {"email": "someone@example.com", "role": "member"},
     )
     assert response.status_code == 403
 
@@ -90,7 +91,7 @@ def test_invitee_can_accept_invitation(
 ) -> None:
     create_resp = admin_client.post(
         f"/api/v1/workspaces/{workspace_with_member.id}/invitations/",
-        {"email": "invitee@example.com", "role": "MEMBER"},
+        {"email": "invitee@example.com", "role": "member"},
     )
     assert create_resp.status_code == 201
     token = create_resp.json()["token"]
@@ -111,7 +112,7 @@ def test_accepting_already_accepted_invitation_fails(
 ) -> None:
     create_resp = admin_client.post(
         f"/api/v1/workspaces/{workspace_with_member.id}/invitations/",
-        {"email": "invitee@example.com", "role": "MEMBER"},
+        {"email": "invitee@example.com", "role": "member"},
     )
     assert create_resp.status_code == 201
     token = create_resp.json()["token"]
@@ -120,3 +121,33 @@ def test_accepting_already_accepted_invitation_fails(
     second_resp = invitee_client.post(f"/api/v1/invitations/{token}/accept/")
     assert second_resp.status_code == 400
     assert second_resp.json()["error"]["code"] == "invitation_already_accepted"
+
+
+def test_invitation_sends_email(admin_client: APIClient, workspace_with_member: Workspace) -> None:
+    with patch("apps.core.email.send_invitation_email") as mock_send:
+        resp = admin_client.post(
+            f"/api/v1/workspaces/{workspace_with_member.id}/invitations/",
+            {"email": "newperson@example.com", "role": "member"},
+            format="json",
+        )
+    assert resp.status_code == 201
+    mock_send.assert_called_once()
+    call_kwargs = mock_send.call_args
+    assert call_kwargs.kwargs.get("to") == "newperson@example.com" or call_kwargs.args[0] == "newperson@example.com"
+
+
+def test_duplicate_invitation_does_not_resend_email(
+    admin_client: APIClient, workspace_with_member: Workspace
+) -> None:
+    with patch("apps.core.email.send_invitation_email") as mock_send:
+        admin_client.post(
+            f"/api/v1/workspaces/{workspace_with_member.id}/invitations/",
+            {"email": "dup@example.com", "role": "member"},
+            format="json",
+        )
+        admin_client.post(
+            f"/api/v1/workspaces/{workspace_with_member.id}/invitations/",
+            {"email": "dup@example.com", "role": "member"},
+            format="json",
+        )
+    assert mock_send.call_count == 1
