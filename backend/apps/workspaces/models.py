@@ -1,6 +1,7 @@
 import uuid
 
 from django.db import models
+from django.utils import timezone
 
 from apps.core.models import BaseModel
 
@@ -24,9 +25,9 @@ class Workspace(BaseModel):
 
 class Membership(models.Model):
     class Role(models.TextChoices):
-        ADMIN = "ADMIN", "Admin"
-        MEMBER = "MEMBER", "Member"
-        VIEWER = "VIEWER", "Viewer"
+        ADMIN = "admin", "Admin"
+        MEMBER = "member", "Member"
+        VIEWER = "viewer", "Viewer"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     workspace = models.ForeignKey(
@@ -61,7 +62,7 @@ class WorkspaceInvitation(models.Model):
         on_delete=models.CASCADE,
         related_name="sent_invitations",
     )
-    invited_at = models.DateTimeField(auto_now_add=True)
+    invited_at = models.DateTimeField(default=timezone.now)
     accepted_at = models.DateTimeField(null=True, blank=True)
     token = models.UUIDField(default=uuid.uuid4, unique=True)
 

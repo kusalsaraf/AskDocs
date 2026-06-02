@@ -45,6 +45,7 @@ export function useDeleteProvider(workspaceId: string | undefined) {
 
 export function useTestProvider(workspaceId: string | undefined) {
   return useMutation({
-    mutationFn: () => testProvider(workspaceId!),
+    mutationFn: (payload: Parameters<typeof testProvider>[1]) =>
+      testProvider(workspaceId!, payload),
   })
 }

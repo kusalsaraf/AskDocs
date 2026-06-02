@@ -27,6 +27,7 @@ from apps.workspaces.services import (
     create_workspace,
     delete_workspace,
     remove_member,
+    resend_invitation,
     update_workspace,
 )
 
@@ -114,14 +115,15 @@ class MemberViewSet(ModelViewSet[Membership]):
 
 class InvitationViewSet(ModelViewSet[WorkspaceInvitation]):
     serializer_class = InvitationSerializer
-    http_method_names = ["post", "head", "options"]
+    http_method_names = ["get", "post", "head", "options"]
 
     def get_permissions(self) -> list[Any]:
         return [IsWorkspaceAdmin()]
 
     def get_queryset(self) -> Any:
         return WorkspaceInvitation.objects.filter(
-            workspace_id=self.kwargs["workspace_id"]
+            workspace_id=self.kwargs["workspace_id"],
+            accepted_at__isnull=True,
         )
 
     def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
@@ -143,3 +145,21 @@ class InvitationAcceptView(APIView):
     def post(self, request: Request, token: UUID, **kwargs: Any) -> Response:
         membership = accept_invitation(token=token, user=request.user)
         return Response(MembershipSerializer(membership).data, status=status.HTTP_200_OK)
+
+
+class InvitationResendView(APIView):
+    permission_classes = [IsWorkspaceAdmin()]
+
+    def get_permissions(self) -> list[Any]:
+        return [IsWorkspaceAdmin()]
+
+    def post(
+        self, request: Request, workspace_id: UUID, invitation_id: UUID, **kwargs: Any
+    ) -> Response:
+        workspace = _get_workspace_or_404(workspace_id)
+        resend_invitation(
+            invitation_id=invitation_id,
+            workspace=workspace,
+            acting_user=request.user,
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)

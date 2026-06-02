@@ -93,6 +93,17 @@ class ProviderConfigWriteSerializer(serializers.Serializer[ProviderConfig]):
         return data
 
 
+class ProviderTestRequestSerializer(serializers.Serializer[Any]):
+    """Like ProviderConfigWriteSerializer but api_key is optional — falls back to the saved key."""
+    provider_name = serializers.ChoiceField(choices=ProviderConfig.Provider.choices)
+    api_key       = serializers.CharField(write_only=True, required=False, allow_blank=True, default="")
+    base_url      = serializers.URLField(required=False, allow_null=True, default=None)
+    azure_region  = serializers.CharField(required=False, allow_blank=True, default="")
+    model_name    = serializers.CharField(max_length=255)
+    temperature   = serializers.FloatField(default=0.7)
+    max_tokens    = serializers.IntegerField(default=2048, min_value=1)
+
+
 class ProviderTestResponseSerializer(serializers.Serializer[Any]):
     success = serializers.BooleanField()
     latency_ms = serializers.IntegerField()

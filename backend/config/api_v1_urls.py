@@ -11,9 +11,11 @@ from apps.chat.views import (
     MessageStreamView,
     QuotaView,
 )
+from apps.documents.views import DocumentDetailView, DocumentListCreateView
 from apps.providers.views import ProviderConfigView, ProviderTestView, SupportedProvidersView
 from apps.workspaces.views import (
     InvitationAcceptView,
+    InvitationResendView,
     InvitationViewSet,
     MemberViewSet,
     WorkspaceViewSet,
@@ -45,14 +47,20 @@ urlpatterns: list[URLPattern] = [
     # Workspace invitations (nested)
     path(
         "workspaces/<uuid:workspace_id>/invitations/",
-        InvitationViewSet.as_view({"post": "create"}),
+        InvitationViewSet.as_view({"get": "list", "post": "create"}),
         name="workspace-invitations",
     ),
-    # Accept invitation (token already UUID from converter)
+    # Accept invitation
     path(
         "invitations/<uuid:token>/accept/",
         InvitationAcceptView.as_view(),
         name="invitation-accept",
+    ),
+    # Resend invitation (admin only)
+    path(
+        "workspaces/<uuid:workspace_id>/invitations/<uuid:invitation_id>/resend/",
+        InvitationResendView.as_view(),
+        name="invitation-resend",
     ),
     # Provider config (singleton per workspace — admin only)
     path(
@@ -70,6 +78,17 @@ urlpatterns: list[URLPattern] = [
         "providers/supported/",
         SupportedProvidersView.as_view(),
         name="providers-supported",
+    ),
+    # Documents
+    path(
+        "workspaces/<uuid:workspace_id>/documents/",
+        DocumentListCreateView.as_view(),
+        name="document-list-create",
+    ),
+    path(
+        "workspaces/<uuid:workspace_id>/documents/<uuid:document_id>/",
+        DocumentDetailView.as_view(),
+        name="document-detail",
     ),
     # Conversations
     path(

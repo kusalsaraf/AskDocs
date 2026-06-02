@@ -138,7 +138,7 @@ def test_member_cannot_change_roles(
     member_client.credentials(HTTP_AUTHORIZATION=f"Bearer {str(refresh.access_token)}")
     response = member_client.patch(
         f"/api/v1/workspaces/{ws.id}/members/{user.id}/",
-        {"role": "VIEWER"},
+        {"role": "viewer"},
     )
     assert response.status_code == 403
 
@@ -150,7 +150,7 @@ def test_sole_admin_cannot_be_demoted(auth_client: APIClient, user: Any) -> None
     ws = create_workspace(name="Sole Admin Test", user=user)
     response = auth_client.patch(
         f"/api/v1/workspaces/{ws.id}/members/{user.id}/",
-        {"role": "MEMBER"},
+        {"role": "member"},
     )
     assert response.status_code == 400
     assert response.json()["error"]["code"] == "cannot_remove_sole_admin"

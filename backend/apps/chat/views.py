@@ -7,9 +7,18 @@ from uuid import UUID
 from django.http import StreamingHttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import status
+from rest_framework.renderers import BaseRenderer
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+
+class _SSERenderer(BaseRenderer):
+    media_type = "text/event-stream"
+    format = "txt"
+
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        return data
 
 from apps.chat.exceptions import ConversationNotFound
 from apps.chat.limits import get_remaining_global_budget, get_user_messages_used_today
@@ -138,6 +147,7 @@ class ConversationDetailView(APIView):
 
 class MessageStreamView(APIView):
     permission_classes = [IsWorkspaceMemberOrAdmin]
+    renderer_classes = [_SSERenderer]
 
     def post(
         self, request: Request, workspace_id: UUID, conversation_id: UUID
@@ -213,7 +223,7 @@ class MessageSourcesView(APIView):
         sources = [
             {
                 "chunk_id": chunk["chunk_id"],
-                "content": chunk["content"],
+                "excerpt": chunk["content"],
                 "document_id": chunk["document_id"],
                 "document_filename": chunk.get("document_filename", ""),
                 "page_number": chunk.get("page_number"),

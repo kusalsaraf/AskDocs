@@ -31,7 +31,7 @@ export function useConversation(
     queryFn: async () =>
       adaptConversation(await getConversation(workspaceId!, conversationId!)),
     enabled: !!workspaceId && !!conversationId,
-    staleTime: 0,
+    staleTime: 30_000,
   })
 }
 

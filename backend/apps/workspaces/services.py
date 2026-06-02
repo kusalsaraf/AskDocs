@@ -152,6 +152,9 @@ def create_invitation(
 
 
 def accept_invitation(token: UUID, user: Any) -> "Membership":
+    from datetime import timedelta
+
+    from apps.core.exceptions import InvitationExpired
     from apps.workspaces.models import Membership, WorkspaceInvitation
 
     try:
@@ -164,15 +167,57 @@ def accept_invitation(token: UUID, user: Any) -> "Membership":
     if invitation.accepted_at is not None:
         raise InvitationAlreadyAccepted()
 
+    # Invitations expire after 24 hours
+    if timezone.now() > invitation.invited_at + timedelta(hours=24):
+        raise InvitationExpired()
+
+    # If the accepting user is already a member, return their membership without
+    # consuming the invitation — prevents the wrong person accidentally eating it.
+    existing = Membership.objects.filter(
+        workspace=invitation.workspace, user=user
+    ).first()
+    if existing:
+        raise InvitationAlreadyAccepted()
+
     invitation.accepted_at = timezone.now()
     invitation.save(update_fields=["accepted_at"])
 
-    membership, _ = Membership.objects.get_or_create(
+    membership = Membership.objects.create(
         workspace=invitation.workspace,
         user=user,
-        defaults={"role": invitation.role},
+        role=invitation.role,
     )
     logger.info(
         "User %s accepted invitation to workspace %s", user.id, invitation.workspace.id
     )
     return membership
+
+
+def resend_invitation(invitation_id: UUID, workspace: Any, acting_user: Any) -> None:
+    from django.conf import settings
+
+    from apps.core.email import send_invitation_email
+    from apps.workspaces.models import WorkspaceInvitation
+
+    try:
+        invitation = WorkspaceInvitation.objects.get(
+            id=invitation_id, workspace=workspace, accepted_at__isnull=True
+        )
+    except WorkspaceInvitation.DoesNotExist as exc:
+        raise NotFound(detail="Invitation not found.") from exc
+
+    # Reset invited_at so the 24h window restarts from now
+    invitation.invited_at = timezone.now()
+    invitation.save(update_fields=["invited_at"])
+
+    inviter_name = getattr(acting_user, "display_name", None) or acting_user.email
+    accept_url = (
+        f"{settings.FRONTEND_URL}/invite/{invitation.token}"
+        f"?workspace={workspace.name}&inviter={inviter_name}"
+    )
+    send_invitation_email(
+        to=invitation.email,
+        workspace_name=workspace.name,
+        inviter_name=inviter_name,
+        accept_url=accept_url,
+    )

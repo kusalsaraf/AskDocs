@@ -9,6 +9,13 @@ from apps.accounts.models import User
 from apps.workspaces.models import Membership, Workspace
 
 
+@pytest.fixture(autouse=True)
+def mock_send_email():
+    """Patch email sending for all invitation tests so no real Resend calls are made."""
+    with patch("apps.core.email.send_invitation_email"):
+        yield
+
+
 @pytest.fixture
 def admin_user(db: Any) -> User:
     return User.objects.create_user(email="inv_admin@example.com", first_name="Admin")

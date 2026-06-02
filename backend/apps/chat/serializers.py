@@ -88,7 +88,7 @@ class SendMessageSerializer(serializers.Serializer):
 
 class SourceChunkSerializer(serializers.Serializer):
     chunk_id = serializers.UUIDField()
-    content = serializers.CharField()
+    excerpt = serializers.CharField()
     document_id = serializers.UUIDField()
     document_filename = serializers.CharField()
     page_number = serializers.IntegerField(allow_null=True)

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useEffect, KeyboardEvent } from "react";
-import { Paperclip, ArrowUp } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/lib/hooks/useWorkspace";
 import { useProvider } from "@/lib/hooks/useProviders";
@@ -12,9 +12,10 @@ interface ChatInputProps {
   onSubmit: () => void;
   disabled?: boolean;
   placeholder?: string;
+  noDocuments?: boolean;
 }
 
-export function ChatInput({ value, onChange, onSubmit, disabled, placeholder }: ChatInputProps) {
+export function ChatInput({ value, onChange, onSubmit, disabled, placeholder, noDocuments }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { activeWorkspace } = useWorkspace();
   const { data: providerData } = useProvider(activeWorkspace?.id);
@@ -29,13 +30,14 @@ export function ChatInput({ value, onChange, onSubmit, disabled, placeholder }: 
   }, [value]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey && !disabled) {
+    if (e.key === "Enter" && !e.shiftKey && !isDisabled) {
       e.preventDefault();
       if (value.trim()) onSubmit();
     }
   };
 
-  const canSubmit = value.trim().length > 0 && !disabled;
+  const isDisabled = disabled || noDocuments;
+  const canSubmit = value.trim().length > 0 && !isDisabled;
 
   const modelLabel = (() => {
     if (!providerData) return "loading…";
@@ -52,23 +54,14 @@ export function ChatInput({ value, onChange, onSubmit, disabled, placeholder }: 
           "focus-within:border-indigo-500/50 focus-within:bg-muted focus-within:ring-2 focus-within:ring-indigo-500/10"
         )}
       >
-        {/* Paperclip */}
-        <button
-          type="button"
-          aria-label="Attach file"
-          className="shrink-0 mb-0.5 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground/70 hover:bg-muted transition-colors"
-        >
-          <Paperclip className="h-4 w-4" />
-        </button>
-
         {/* Textarea */}
         <textarea
           ref={textareaRef}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder ?? "Ask anything about your documents…"}
-          disabled={disabled}
+          placeholder={noDocuments ? "Upload and index documents before asking questions…" : (placeholder ?? "Ask anything about your documents…")}
+          disabled={isDisabled}
           rows={1}
           className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-50 leading-relaxed py-0.5"
           style={{ minHeight: "22px" }}

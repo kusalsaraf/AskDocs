@@ -13,6 +13,7 @@ type PageState =
   | 'unauthenticated'
   | 'accepting'
   | 'already_member'
+  | 'expired'
   | 'invalid'
   | 'error'
 
@@ -53,8 +54,10 @@ export default function InviteAcceptPage() {
       })
       .catch((err) => {
         const status = err?.response?.status
-        if (status === 400) setState('already_member')
-        else if (status === 404) setState('invalid')
+        const code = err?.response?.data?.error?.code
+        if (status === 404) setState('invalid')
+        else if (code === 'invitation_expired') setState('expired')
+        else if (status === 400) setState('already_member')
         else setState('error')
       })
   }
@@ -133,6 +136,20 @@ export default function InviteAcceptPage() {
             >
               Go to workspace →
             </button>
+          </div>
+        )}
+
+        {state === 'expired' && (
+          <div className="flex flex-col items-center gap-4 text-center">
+            <AlertCircle className="h-10 w-10 text-amber-400" />
+            <div>
+              <h1 className="text-base font-semibold text-foreground">
+                Invite link expired
+              </h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                This invite link expired after 24 hours. Ask the workspace admin to send a new one.
+              </p>
+            </div>
           </div>
         )}
 

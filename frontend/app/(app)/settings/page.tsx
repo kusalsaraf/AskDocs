@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import {
   CheckCircle2, XCircle, Eye, EyeOff, ChevronDown, ChevronRight,
-  Loader2, UserPlus, MoreHorizontal, Zap, Check, Copy,
+  Loader2, UserPlus, MoreHorizontal, Zap, Check, Copy, RotateCcw,
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { cn, formatRelativeTime } from '@/lib/utils'
@@ -18,7 +18,7 @@ import {
   useProvider, useSupportedProviders, useSaveProvider,
   useTestProvider,
 } from '@/lib/hooks/useProviders'
-import { listMembers, listInvitations, inviteMember, removeMember } from '@/lib/api/workspaces'
+import { listMembers, listInvitations, inviteMember, removeMember, resendInvitation } from '@/lib/api/workspaces'
 import { updateWorkspace } from '@/lib/api/workspaces'
 import { getQuota } from '@/lib/api/chat'
 import { adaptMember, adaptInvitation, adaptProviderConfig, backendToProviderKey, providerKeyToBackend } from '@/lib/types/domain'
@@ -732,14 +732,21 @@ function MembersTab() {
                   i < invites.length - 1 && 'border-b border-border/50'
                 )}
               >
-                <div>
+                <div className="min-w-0">
                   <span className="font-mono text-sm text-muted-foreground italic">{inv.email}</span>
-                  <span className="ml-3 text-xs text-muted-foreground/60">
-                    {formatRelativeTime(inv.invitedAt)}
-                  </span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    {inv.expiresAt < new Date() ? (
+                      <span className="text-[11px] text-rose-400">Expired</span>
+                    ) : (
+                      <span className="text-[11px] text-muted-foreground/60">
+                        Expires {formatRelativeTime(inv.expiresAt)}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <RoleBadge role={inv.role} />
+                  <ResendButton workspaceId={activeWorkspace!.id} invitationId={inv.id} />
                   <CopyLinkButton token={inv.token} />
                 </div>
               </div>
@@ -837,6 +844,34 @@ function RoleBadge({ role }: { role: 'admin' | 'member' | 'viewer' }) {
     <span className={cn('inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium capitalize', styles[role])}>
       {role}
     </span>
+  )
+}
+
+function ResendButton({ workspaceId, invitationId }: { workspaceId: string; invitationId: string }) {
+  const queryClient = useQueryClient()
+  const { mutate, isPending, isSuccess } = useMutation({
+    mutationFn: () => resendInvitation(workspaceId, invitationId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['invitations', workspaceId] }),
+  })
+
+  return (
+    <button
+      onClick={() => mutate()}
+      disabled={isPending}
+      title="Resend invite"
+      className={cn(
+        'flex h-7 w-7 items-center justify-center rounded-md transition-colors',
+        isSuccess
+          ? 'text-emerald-400'
+          : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+      )}
+    >
+      {isPending
+        ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        : isSuccess
+          ? <Check className="h-3.5 w-3.5" />
+          : <RotateCcw className="h-3.5 w-3.5" />}
+    </button>
   )
 }
 

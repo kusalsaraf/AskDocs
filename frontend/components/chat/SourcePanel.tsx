@@ -1,9 +1,8 @@
 "use client";
 
 import React from "react";
-import { X, FileText, ExternalLink } from "lucide-react";
+import { X, FileText } from "lucide-react";
 import type { Citation } from "@/lib/types/domain";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface SourcePanelProps {
@@ -57,13 +56,6 @@ export function SourcePanel({ citation, onClose }: SourcePanelProps) {
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="px-4 py-3.5 border-t border-border/60">
-        <Button variant="outline" size="sm" className="w-full gap-2">
-          <ExternalLink className="h-3.5 w-3.5" />
-          View full document
-        </Button>
-      </div>
     </aside>
   );
 }

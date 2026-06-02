@@ -8,6 +8,7 @@ from apps.core.logging import get_logger
 from apps.providers.crypto import encrypt_api_key, get_last_4
 from apps.providers.llm.base import BaseLLMProvider, ProviderTestResult
 from apps.providers.llm.factory import get_llm_provider_for_workspace
+from apps.providers.llm.registry import PROVIDER_REGISTRY
 from apps.providers.models import ProviderConfig
 
 if TYPE_CHECKING:
@@ -66,6 +67,40 @@ def delete_config(workspace: Workspace) -> None:
 def get_active_provider(workspace: Workspace) -> BaseLLMProvider:
     """Phase 5's single entry point for resolving the active LLM provider."""
     return get_llm_provider_for_workspace(workspace)
+
+
+def test_provider_from_payload(workspace: "Workspace", data: dict[str, Any]) -> ProviderTestResult:
+    """Test credentials from the request body without persisting to the DB.
+
+    If api_key is absent (user hasn't re-entered it), falls back to the
+    workspace's saved encrypted key so existing configs can be retested.
+    """
+    provider_name = data["provider_name"]
+    provider_class = PROVIDER_REGISTRY.get(provider_name)
+    if provider_class is None:
+        return ProviderTestResult(
+            success=False, latency_ms=0, model_echo="",
+            error=f"Unknown provider '{provider_name}'.",
+        )
+
+    config = ProviderConfig(
+        provider_name=provider_name,
+        model_name=data.get("model_name", ""),
+        base_url=data.get("base_url"),
+        azure_region=data.get("azure_region") or "",
+    )
+    api_key: str = data.get("api_key", "")
+    if api_key:
+        config.encrypted_api_key = encrypt_api_key(api_key)
+    else:
+        try:
+            saved = ProviderConfig.objects.get(workspace=workspace)
+            if saved.encrypted_api_key:
+                config.encrypted_api_key = bytes(saved.encrypted_api_key)
+        except ProviderConfig.DoesNotExist:
+            pass
+
+    return provider_class(config).test_connection()
 
 
 def test_provider(workspace: Workspace) -> ProviderTestResult:

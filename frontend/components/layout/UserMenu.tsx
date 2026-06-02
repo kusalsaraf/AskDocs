@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
-import { Settings, LogOut, User as UserIcon, Monitor, Sun, Moon, Check, Palette } from "lucide-react";
+import { Settings, LogOut, Monitor, Sun, Moon, Check, Palette } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/hooks/useAuth";
 import type { User } from "@/lib/types/domain";
 import {
@@ -25,6 +26,7 @@ interface UserMenuProps {
 export function UserMenu({ user }: UserMenuProps) {
   const { theme, setTheme } = useTheme()
   const { logout } = useAuth()
+  const router = useRouter()
 
   return (
     <DropdownMenu>
@@ -49,11 +51,7 @@ export function UserMenu({ user }: UserMenuProps) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem className="gap-2.5">
-          <UserIcon className="h-4 w-4" />
-          Profile
-        </DropdownMenuItem>
-        <DropdownMenuItem className="gap-2.5">
+        <DropdownMenuItem className="gap-2.5" onClick={() => router.push('/settings')}>
           <Settings className="h-4 w-4" />
           Settings
         </DropdownMenuItem>
