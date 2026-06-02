@@ -54,6 +54,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem('pending_invite')
         try {
           await acceptInvitation(pendingToken)
+          queryClient.invalidateQueries({ queryKey: ['members'] })
+          queryClient.invalidateQueries({ queryKey: ['invitations'] })
         } catch {
           // ignore — already a member or token invalid; accept page handles state
         }
