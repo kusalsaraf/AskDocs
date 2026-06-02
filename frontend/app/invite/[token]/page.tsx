@@ -72,6 +72,12 @@ export default function InviteAcceptPage() {
       setState('unauthenticated')
       return
     }
+    // If AuthContext already handled acceptance (it clears pending_invite first),
+    // just redirect rather than double-calling acceptInvitation.
+    if (!localStorage.getItem('pending_invite')) {
+      router.replace('/chat')
+      return
+    }
     tryAccept()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, isLoading])
