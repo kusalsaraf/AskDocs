@@ -1,8 +1,28 @@
+import os
 from typing import Any
 
 import pytest
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
+
+_FIXTURES_DIR = os.path.join(os.path.dirname(__file__), "fixtures")
+
+
+@pytest.fixture(scope="session")
+def fixture_dir() -> str:
+    return _FIXTURES_DIR
+
+
+@pytest.fixture(scope="session")
+def txt_fixture_bytes() -> bytes:
+    with open(os.path.join(_FIXTURES_DIR, "test.txt"), "rb") as f:
+        return f.read()
+
+
+@pytest.fixture(scope="session")
+def pdf_fixture_bytes() -> bytes:
+    with open(os.path.join(_FIXTURES_DIR, "test.pdf"), "rb") as f:
+        return f.read()
 
 
 @pytest.fixture(autouse=True)

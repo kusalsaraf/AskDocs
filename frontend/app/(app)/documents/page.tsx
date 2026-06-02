@@ -36,12 +36,13 @@ export default function DocumentsPage() {
   const [uploadOpen, setUploadOpen]       = useState(false)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
 
-  const counts = useMemo(
+  const counts: Record<FilterKey, number> = useMemo(
     () => ({
       all:        documents.length,
       ready:      documents.filter((d) => d.status === 'ready').length,
       processing: documents.filter((d) => d.status === 'processing' || d.status === 'pending').length,
       failed:     documents.filter((d) => d.status === 'failed').length,
+      pending:    documents.filter((d) => d.status === 'pending').length,
     }),
     [documents]
   )

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { FileText, Sun, Moon } from 'lucide-react'
 import { useTheme } from 'next-themes'
@@ -61,6 +61,14 @@ function ThemeToggle() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function SignInPage() {
+  return (
+    <Suspense>
+      <SignInContent />
+    </Suspense>
+  )
+}
+
+function SignInContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { loginWithGoogle, isAuthenticated } = useAuth()

@@ -1,0 +1,7 @@
+Acme Corp Employee Handbook
+
+Welcome to Acme Corp. We are committed to building a great workplace for all employees.
+
+Remote Work Policy: Employees may work remotely up to 3 days per week, subject to manager approval. Core hours are 10am to 3pm in the employee's local timezone.
+
+Benefits include health insurance, 401k matching, and flexible hours. All-hands meetings are mandatory in-person on the first Monday of every month.

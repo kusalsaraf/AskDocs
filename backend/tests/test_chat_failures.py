@@ -55,8 +55,8 @@ def _consume_sse(resp) -> bytes:
 
 def _make_failing_provider(exc: Exception) -> MagicMock:
     mock_provider = MagicMock()
-    mock_provider.provider_name = "gemini"
-    mock_provider._model_name = "gemini-1.5-flash"
+    mock_provider.provider_name = "openai"
+    mock_provider._model_name = "gpt-4o-mini"
     mock_provider.stream.side_effect = exc
     return mock_provider
 

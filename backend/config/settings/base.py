@@ -150,9 +150,25 @@ CHAT_MAX_HISTORY_TURNS = env.int("CHAT_MAX_HISTORY_TURNS", default=6)
 # ── Provider system ───────────────────────────────────────────────────────────
 # No default — raises ImproperlyConfigured at startup if missing
 PROVIDER_ENCRYPTION_KEY = env("PROVIDER_ENCRYPTION_KEY")
-DEFAULT_PLATFORM_GEMINI_API_KEY = env("DEFAULT_PLATFORM_GEMINI_API_KEY", default="")
 PROVIDER_TEST_RATE_LIMIT_PER_HOUR = env.int("PROVIDER_TEST_RATE_LIMIT_PER_HOUR", default=10)
 PROVIDER_REQUEST_TIMEOUT_SECONDS = env.int("PROVIDER_REQUEST_TIMEOUT_SECONDS", default=30)
+
+# Platform-default LLM provider (used when a workspace has no BYOK ProviderConfig).
+# Set DEFAULT_PLATFORM_PROVIDER to "openai" or "gemini" and supply the matching key.
+DEFAULT_PLATFORM_PROVIDER = env("DEFAULT_PLATFORM_PROVIDER", default="openai")
+DEFAULT_PLATFORM_OPENAI_API_KEY = env("DEFAULT_PLATFORM_OPENAI_API_KEY", default="")
+DEFAULT_PLATFORM_OPENAI_MODEL = env("DEFAULT_PLATFORM_OPENAI_MODEL", default="gpt-4o-mini")
+DEFAULT_PLATFORM_GEMINI_API_KEY = env("DEFAULT_PLATFORM_GEMINI_API_KEY", default="")
+DEFAULT_PLATFORM_GEMINI_MODEL = env("DEFAULT_PLATFORM_GEMINI_MODEL", default="gemini-1.5-flash")
+
+# Embedding provider for document ingestion and query embedding.
+# "openai" uses text-embedding-3-small at 768 dims (Matryoshka truncation).
+# "gemini" uses text-embedding-004 at 768 dims.
+EMBEDDING_PROVIDER = env("EMBEDDING_PROVIDER", default="openai")
+
+# ── Document parser ───────────────────────────────────────────────────────────
+PARSER_PROVIDER = env("PARSER_PROVIDER", default="unstructured")
+UNSTRUCTURED_DEFAULT_STRATEGY = env("UNSTRUCTURED_DEFAULT_STRATEGY", default="fast")
 
 CACHES = {
     "default": {

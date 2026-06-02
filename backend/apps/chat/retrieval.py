@@ -3,26 +3,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from uuid import UUID
 
-import google.generativeai as genai
-from django.conf import settings
-
 from apps.core.logging import get_logger
 from apps.documents.models import DocumentChunk
 
 logger = get_logger(__name__)
 
-_EMBEDDING_MODEL = "models/text-embedding-004"
-
 
 def _embed_query(query: str) -> list[float]:
-    api_key = settings.DEFAULT_PLATFORM_GEMINI_API_KEY
-    genai.configure(api_key=api_key)
-    result = genai.embed_content(
-        model=_EMBEDDING_MODEL,
-        content=query,
-        task_type="retrieval_query",
-    )
-    return result["embedding"]
+    from apps.documents.embeddings.factory import get_embedding_provider
+    return get_embedding_provider().embed(query)
 
 
 @dataclass

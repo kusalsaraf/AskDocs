@@ -279,7 +279,7 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
                   {successCount} {successCount === 1 ? "document" : "documents"} uploaded
                 </h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  They're processing now. You'll be able to chat with them in a few moments.
+                  They&apos;re processing now. You&apos;ll be able to chat with them in a few moments.
                 </p>
               </div>
             </div>
