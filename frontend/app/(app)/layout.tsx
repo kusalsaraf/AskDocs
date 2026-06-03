@@ -3,14 +3,12 @@
 import React, { useState } from 'react'
 import { PanelLeft } from 'lucide-react'
 import { usePathname } from 'next/navigation'
-import { useQuery } from '@tanstack/react-query'
 import { AuthGuard } from '@/components/layout/AuthGuard'
 import { WorkspaceProvider } from '@/lib/contexts/WorkspaceContext'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { useWorkspace } from '@/lib/hooks/useWorkspace'
-import { listConversations } from '@/lib/api/chat'
-import { adaptConversationSummary } from '@/lib/types/domain'
+import { useConversations } from '@/lib/hooks/useChat'
 
 function AppShell({ children }: { children: React.ReactNode }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -22,13 +20,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
     ? pathname.split('/chat/')[1]
     : undefined
 
-  const { data: rawConvs = [] } = useQuery({
-    queryKey: ['conversations', activeWorkspace?.id],
-    queryFn: () => listConversations(activeWorkspace!.id),
-    enabled: !!activeWorkspace,
-    staleTime: 30_000,
-  })
-  const conversations = rawConvs.map(adaptConversationSummary)
+  const { data: conversations = [] } = useConversations(activeWorkspace?.id)
 
   if (!user || !activeWorkspace) return null
 

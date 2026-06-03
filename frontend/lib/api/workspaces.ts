@@ -48,8 +48,9 @@ export async function listInvitations(workspaceId: string): Promise<ApiPendingIn
   return data.results
 }
 
-export async function acceptInvitation(token: string): Promise<void> {
-  await apiClient.post(`/invitations/${token}/accept/`)
+export async function acceptInvitation(token: string): Promise<{ workspace_id: string }> {
+  const { data } = await apiClient.post<{ workspace_id: string }>(`/invitations/${token}/accept/`)
+  return data
 }
 
 export async function resendInvitation(workspaceId: string, invitationId: string): Promise<void> {

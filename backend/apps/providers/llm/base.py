@@ -1,3 +1,5 @@
+"""Abstract LLM provider interface and shared request/response types."""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -40,6 +42,8 @@ class ProviderTestResult:
 
 
 class BaseLLMProvider(ABC):
+    """Provider adapter for non-streaming completion, streaming, and connectivity tests."""
+
     provider_name: str
     supports_streaming: bool = False
 
@@ -47,10 +51,13 @@ class BaseLLMProvider(ABC):
         self.config = config
 
     @abstractmethod
-    def test_connection(self) -> ProviderTestResult: ...
+    def test_connection(self) -> ProviderTestResult:
+        """Verify credentials and model access with a minimal request."""
 
     @abstractmethod
-    def complete(self, messages: list[Message], **kwargs: Any) -> CompletionResult: ...
+    def complete(self, messages: list[Message], **kwargs: Any) -> CompletionResult:
+        """Return a single completion for the message list."""
 
     @abstractmethod
-    def stream(self, messages: list[Message], **kwargs: Any) -> Iterator[StreamChunk]: ...
+    def stream(self, messages: list[Message], **kwargs: Any) -> Iterator[StreamChunk]:
+        """Yield incremental text deltas for the message list."""

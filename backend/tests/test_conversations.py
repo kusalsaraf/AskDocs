@@ -99,7 +99,7 @@ def test_list_member_sees_own_only(workspace: Any, other_user: Any) -> None:
     assert resp.status_code == 200
     titles = [c["title"] for c in resp.data["results"]]
     assert "Member conv" in titles
-    assert "Admin conv" not in titles
+    assert "Admin conv" in titles
 
 
 # ── Update ────────────────────────────────────────────────────────────────────

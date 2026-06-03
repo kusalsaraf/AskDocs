@@ -83,7 +83,7 @@ def test_provider_auth_failure_saves_error_message(
         role=Message.Role.ASSISTANT,
     ).exclude(error_message="")
     assert error_messages.exists()
-    assert "auth_failed" in error_messages.first().error_message
+    assert "Authentication with the AI provider failed" in error_messages.first().error_message
 
 
 @pytest.mark.django_db
@@ -176,4 +176,4 @@ def test_error_message_persisted_on_provider_rate_limit(
         conversation=conv, role=Message.Role.ASSISTANT
     ).exclude(error_message="")
     assert error_msgs.exists()
-    assert "provider_rate_limited" in error_msgs.first().error_message
+    assert "rate limit was exceeded" in error_msgs.first().error_message

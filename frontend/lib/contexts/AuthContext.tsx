@@ -9,6 +9,7 @@ import { adaptUser } from '@/lib/types/domain'
 import type { User } from '@/lib/types/domain'
 import type { ApiWorkspace } from '@/lib/types/api'
 import { acceptInvitation } from '@/lib/api/workspaces'
+import { STORAGE_KEYS, ROUTES, queryKeys } from '@/lib/constants'
 
 interface AuthContextValue {
   user: User | null
@@ -32,7 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const { data, isLoading } = useQuery({
-    queryKey: ['me'],
+    queryKey: queryKeys.me(),
     queryFn: getMe,
     enabled: !skipFetch,
     retry: false,
@@ -47,17 +48,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       )
       setTokens(tokens.access, tokens.refresh)
       setSkipFetch(false)
-      await queryClient.invalidateQueries({ queryKey: ['me'] })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.me() })
 
-      const pendingToken = localStorage.getItem('pending_invite')
+      const pendingToken = localStorage.getItem(STORAGE_KEYS.PENDING_INVITE)
       if (pendingToken) {
-        localStorage.removeItem('pending_invite')
+        localStorage.removeItem(STORAGE_KEYS.PENDING_INVITE)
         try {
-          await acceptInvitation(pendingToken)
-          // Re-fetch me so the new workspace appears in the user's session
-          await queryClient.invalidateQueries({ queryKey: ['me'] })
-          queryClient.invalidateQueries({ queryKey: ['members'] })
-          queryClient.invalidateQueries({ queryKey: ['invitations'] })
+          const { workspace_id } = await acceptInvitation(pendingToken)
+          if (workspace_id) {
+            localStorage.setItem(STORAGE_KEYS.ACTIVE_WORKSPACE, workspace_id)
+          }
+          await queryClient.invalidateQueries({ queryKey: queryKeys.me() })
+          queryClient.invalidateQueries({ queryKey: queryKeys.members() })
+          queryClient.invalidateQueries({ queryKey: queryKeys.invitations() })
         } catch {
           // ignore — already a member or token invalid; accept page handles state
         }
@@ -76,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clearTokens()
     queryClient.clear()
     setSkipFetch(true)
-    if (typeof window !== 'undefined') window.location.href = '/sign-in'
+    if (typeof window !== 'undefined') window.location.href = ROUTES.SIGN_IN
   }, [queryClient])
 
   const role = data?.workspaces[0]?.role ?? 'member'

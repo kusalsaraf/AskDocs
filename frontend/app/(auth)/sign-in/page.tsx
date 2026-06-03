@@ -1,7 +1,7 @@
 'use client'
 
-import React, { Suspense, useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { FileText, Sun, Moon } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useGoogleLogin } from '@react-oauth/google'
@@ -61,21 +61,14 @@ function ThemeToggle() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function SignInPage() {
-  return (
-    <Suspense>
-      <SignInContent />
-    </Suspense>
-  )
+  return <SignInContent />
 }
 
 function SignInContent() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const { loginWithGoogle, isAuthenticated } = useAuth()
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  const isDemoMode = searchParams.get('demo') === '1'
 
   // If already authenticated, send to /chat
   useEffect(() => {
@@ -125,13 +118,6 @@ function SignInContent() {
           </div>
         </div>
 
-        {/* Demo mode banner */}
-        {isDemoMode && (
-          <div className="mb-4 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-400 ring-1 ring-amber-500/20">
-            Demo mode requires sign-in. Please sign in with Google to continue.
-          </div>
-        )}
-
         {/* Error */}
         {error && (
           <div className="mb-4 rounded-lg bg-rose-500/10 px-3 py-2 text-xs text-rose-400 ring-1 ring-rose-500/20">
@@ -156,27 +142,6 @@ function SignInContent() {
         >
           {googleLoading ? <Spinner /> : <GoogleIcon />}
           {googleLoading ? 'Signing in…' : 'Continue with Google'}
-        </button>
-
-        {/* Divider */}
-        <div className="my-4 flex items-center gap-3">
-          <div className="h-px flex-1 bg-border" />
-          <span className="text-xs text-muted-foreground">or</span>
-          <div className="h-px flex-1 bg-border" />
-        </div>
-
-        {/* Demo CTA */}
-        <button
-          onClick={() => router.push('/sign-in?demo=1')}
-          className={cn(
-            'flex w-full items-center justify-center rounded-lg px-4 py-2.5',
-            'border border-border',
-            'text-sm font-medium text-muted-foreground',
-            'hover:border-zinc-400 hover:text-foreground dark:hover:border-border/60',
-            'transition-colors duration-150'
-          )}
-        >
-          Try the demo
         </button>
 
         {/* Footer */}

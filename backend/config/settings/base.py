@@ -53,6 +53,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "apps.core.middleware.SecurityHeadersMiddleware",
     "apps.core.middleware.RequestIDMiddleware",
     "allauth.account.middleware.AccountMiddleware",
 ]
@@ -119,6 +120,14 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "60/minute",
+        "auth_login": "20/minute",
+        "auth_refresh": "30/minute",
+    },
 }
 
 SPECTACULAR_SETTINGS = {
@@ -145,7 +154,9 @@ USER_DAILY_MESSAGE_LIMIT = env.int("USER_DAILY_MESSAGE_LIMIT", default=100)
 GLOBAL_DAILY_PLATFORM_LLM_BUDGET = env.int("GLOBAL_DAILY_PLATFORM_LLM_BUDGET", default=5000)
 CHAT_RESPONSE_CACHE_TTL_SECONDS = env.int("CHAT_RESPONSE_CACHE_TTL_SECONDS", default=86400)
 CHAT_DEFAULT_TOP_K = env.int("CHAT_DEFAULT_TOP_K", default=5)
-CHAT_MAX_HISTORY_TURNS = env.int("CHAT_MAX_HISTORY_TURNS", default=6)
+CHAT_MAX_HISTORY_TURNS = env.int("CHAT_MAX_HISTORY_TURNS", default=10)
+
+MAX_DOCUMENTS_PER_WORKSPACE = env.int("MAX_DOCUMENTS_PER_WORKSPACE", default=50)
 
 # ── Email (Resend) ─────────────────────────────────────────────────────────────
 RESEND_API_KEY = env("RESEND_API_KEY", default="")

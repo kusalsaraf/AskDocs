@@ -5,6 +5,7 @@ import { ThumbsUp, ThumbsDown, Copy, RotateCcw, Sparkles, Check, AlertCircle } f
 import type { Message, Citation } from "@/lib/types/domain";
 import { CitationBadge } from "./CitationBadge";
 import { cn } from "@/lib/utils";
+import { COPY_FEEDBACK_MS } from "@/lib/constants";
 
 interface ChatMessageProps {
   message: Message
@@ -20,7 +21,7 @@ export function ChatMessage({ message, activeCitationId, onCitationClick, onRege
   const handleCopy = async () => {
     await navigator.clipboard.writeText(message.content);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), COPY_FEEDBACK_MS);
   };
 
   if (message.role === "user") {

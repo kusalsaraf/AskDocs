@@ -1,3 +1,5 @@
+"""Multi-tenant workspaces, memberships, and email invitations."""
+
 import uuid
 
 from django.db import models
@@ -7,6 +9,8 @@ from apps.core.models import BaseModel
 
 
 class Workspace(BaseModel):
+    """Collaboration container for documents, chat, and provider settings."""
+
     name = models.CharField(max_length=255)
     slug = models.SlugField(unique=True, max_length=255)
     created_by = models.ForeignKey(
@@ -24,6 +28,8 @@ class Workspace(BaseModel):
 
 
 class Membership(models.Model):
+    """Links a user to a workspace with a role."""
+
     class Role(models.TextChoices):
         ADMIN = "admin", "Admin"
         MEMBER = "member", "Member"
@@ -47,6 +53,8 @@ class Membership(models.Model):
 
 
 class WorkspaceInvitation(models.Model):
+    """Pending email invite to join a workspace."""
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     workspace = models.ForeignKey(
         Workspace, on_delete=models.CASCADE, related_name="invitations"

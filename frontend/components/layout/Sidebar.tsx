@@ -15,11 +15,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useWorkspace } from '@/lib/hooks/useWorkspace'
 import { deleteConversation } from '@/lib/api/chat'
+import { queryKeys, DEFAULT_CONVERSATION_TITLE } from '@/lib/constants'
 
 interface SidebarProps {
   conversations: ConversationSummary[]
@@ -38,7 +38,6 @@ export function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const queryClient = useQueryClient()
   const { workspaces, setActiveWorkspace } = useWorkspace()
 
   return (
@@ -140,7 +139,7 @@ function ConversationItem({
   const { mutate: delConv } = useMutation({
     mutationFn: () => deleteConversation(workspaceId, conversation.id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['conversations', workspaceId] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.conversations(workspaceId) })
       if (isActive) router.push('/chat')
     },
   })
@@ -156,7 +155,7 @@ function ConversationItem({
     >
       <Link href={`/chat/${conversation.id}`} className="flex-1 min-w-0 flex flex-col gap-0.5">
         <span className="block truncate text-xs font-medium leading-snug">
-          {truncate(conversation.title || 'New conversation', 38)}
+          {truncate(conversation.title || DEFAULT_CONVERSATION_TITLE, 38)}
         </span>
         <RelativeTime date={conversation.updatedAt} className="text-[11px] text-muted-foreground/60" />
       </Link>

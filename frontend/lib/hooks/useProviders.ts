@@ -6,19 +6,25 @@ import {
   testProvider,
   listSupportedProviders,
 } from '@/lib/api/providers'
+import { queryKeys } from '@/lib/constants'
 
 export function useProvider(workspaceId: string | undefined) {
   return useQuery({
-    queryKey: ['provider', workspaceId],
+    queryKey: queryKeys.provider(workspaceId),
     queryFn: () => getProvider(workspaceId!),
     enabled: !!workspaceId,
     staleTime: 60_000,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    retry: (failureCount: number, error: any) => {
+      if (error?.response?.status === 403) return false
+      return failureCount < 3
+    },
   })
 }
 
 export function useSupportedProviders() {
   return useQuery({
-    queryKey: ['providers', 'supported'],
+    queryKey: queryKeys.supportedProviders(),
     queryFn: listSupportedProviders,
     staleTime: Infinity,
   })
@@ -30,7 +36,7 @@ export function useSaveProvider(workspaceId: string | undefined) {
     mutationFn: (payload: Parameters<typeof saveProvider>[1]) =>
       saveProvider(workspaceId!, payload),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['provider', workspaceId] }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.provider(workspaceId) }),
   })
 }
 
@@ -39,7 +45,7 @@ export function useDeleteProvider(workspaceId: string | undefined) {
   return useMutation({
     mutationFn: () => deleteProvider(workspaceId!),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['provider', workspaceId] }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.provider(workspaceId) }),
   })
 }
 

@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { Workspace } from '@/lib/types/domain'
 import { adaptWorkspace } from '@/lib/types/domain'
 import { createWorkspace } from '@/lib/api/workspaces'
+import { queryKeys } from '@/lib/constants'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,7 +30,7 @@ export function WorkspaceSwitcher({ workspace, workspaces, onSwitch }: Workspace
   const { mutate: doCreate } = useMutation({
     mutationFn: () => createWorkspace(newName.trim()),
     onSuccess: (api) => {
-      queryClient.invalidateQueries({ queryKey: ['me'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.me() })
       onSwitch(adaptWorkspace(api))
       setCreating(false)
       setNewName('')
