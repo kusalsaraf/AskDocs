@@ -30,7 +30,7 @@
   <img src="docs/screenshots/settings-provider.png" width="800" alt="BYOK provider configuration" />
 </p>
 
-> :link: **Live demo:** _Coming soon_ | :movie_camera: **Walkthrough:** _Coming soon_
+> :link: **Live demo:** _Coming soon_ | :movie_camera: **[Walkthrough video](docs/walkthrough.mp4)** (~93s, voiceover)
 
 ---
 
