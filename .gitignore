@@ -53,3 +53,4 @@ backend/htmlcov/
 backend/.coverage
 backend/.mypy_cache/
 backend/.ruff_cache/
+docs/.video-tmp/
