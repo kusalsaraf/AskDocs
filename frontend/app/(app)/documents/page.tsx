@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react'
 import { Search, Upload, LayoutGrid, List, FileQuestion, AlertCircle, RefreshCw } from 'lucide-react'
 import type { DocumentStatus } from '@/lib/types/domain'
-import { cn } from '@/lib/utils'
+import { cn, getApiErrorMessage } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { DocumentCard, DocumentRow } from '@/components/documents/DocumentCard'
 import { UploadModal } from '@/components/documents/UploadModal'
@@ -31,9 +31,10 @@ export default function DocumentsPage() {
     isError,
     refetch,
   } = useDocuments(activeWorkspace?.id)
-  const { mutate: doDelete } = useDeleteDocument(activeWorkspace?.id)
+  const { mutateAsync: doDelete } = useDeleteDocument(activeWorkspace?.id)
 
   const [viewMode, setViewMode]           = useState<ViewMode>('grid')
+  const [error, setError] = useState<string | null>(null)
   const [activeFilter, setActiveFilter]   = useState<FilterKey>('all')
   const [searchQuery, setSearchQuery]     = useState('')
   const [uploadOpen, setUploadOpen]       = useState(false)
@@ -94,9 +95,13 @@ export default function DocumentsPage() {
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={() => {
-                  doDelete(deleteConfirmId)
-                  setDeleteConfirmId(null)
+                onClick={async () => {
+                  try {
+                    await doDelete(deleteConfirmId)
+                    setDeleteConfirmId(null)
+                  } catch (err) {
+                    setError(getApiErrorMessage(err))
+                  }
                 }}
               >
                 Delete
@@ -134,6 +139,12 @@ export default function DocumentsPage() {
             Upload documents
           </Button>
         </div>
+
+        {error && (
+          <div className="mx-6 mt-2 rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-xs text-rose-400">
+            {error}
+          </div>
+        )}
 
         {/* Filter row */}
         <div className="flex items-center justify-between border-b border-border/40 px-6 py-2.5">
@@ -202,7 +213,7 @@ export default function DocumentsPage() {
                       key={doc.id}
                       document={doc}
                       onClick={() => {}}
-                      onDelete={() => setDeleteConfirmId(doc.id)}
+                      onDelete={() => { setError(null); setDeleteConfirmId(doc.id) }}
                       canDelete={canDelete}
                     />
                   )
@@ -210,7 +221,7 @@ export default function DocumentsPage() {
               </div>
             </div>
           ) : (
-            <ListView documents={filtered} onDelete={(id) => setDeleteConfirmId(id)} isAdmin={isAdmin} userId={user?.id} />
+            <ListView documents={filtered} onDelete={(id) => { setError(null); setDeleteConfirmId(id) }} isAdmin={isAdmin} userId={user?.id} />
           )}
         </div>
       </div>

@@ -1,6 +1,6 @@
 # Deployment
 
-> **Draft — completed in Phase 6.** This document describes the planned production deployment architecture. AskDocs has not yet been deployed to production. Steps marked as "TODO" will be filled in during Phase 6.
+> **Work in progress.** This document describes the planned production deployment architecture. AskDocs has not yet been deployed to production. Infrastructure targets, checklists, and operational guidance below are stable; the step-by-step deploy procedure in [Step-by-Step Deploy](#step-by-step-deploy) is still being finalized.
 
 ## Target Infrastructure
 
@@ -42,7 +42,7 @@ All services run on free-tier plans suitable for a portfolio project.
 
 ## Step-by-Step Deploy
 
-**TODO: Complete during Phase 6.**
+**TODO: Complete during Phase 6.** The commands below are a scaffold only — exact Fly.io app names, secrets, and Supabase connection strings will be filled in when production deploy is executed.
 
 ```bash
 # 1. Install Fly.io CLI

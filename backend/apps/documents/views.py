@@ -132,7 +132,13 @@ class DocumentListCreateView(APIView):
             mime_type=file.content_type or "",
             status=Document.Status.PENDING,
         )
-        ingest_document.delay(str(doc.id), base64.b64encode(file.read()).decode())
+        try:
+            ingest_document.delay(str(doc.id), base64.b64encode(file.read()).decode())
+        except Exception:
+            doc.status = Document.Status.FAILED
+            doc.error_message = "Upload saved but processing could not be started. Please try again."
+            doc.save(update_fields=["status", "error_message"])
+            logger.exception("Failed to enqueue document ingestion", extra={"document_id": str(doc.id)})
 
         logger.info(
             "Document uploaded",
@@ -170,7 +176,10 @@ class DocumentDetailView(APIView):
         workspace = get_workspace_or_404(workspace_id)
         doc = get_object_or_404(Document, id=document_id, workspace=workspace)
         if not is_admin(workspace, request.user) and doc.uploaded_by != request.user:
-            return Response(status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"error": {"code": "permission_denied", "message": "You can only delete documents you uploaded."}},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         doc.delete()
         logger.info(
             "Document deleted",

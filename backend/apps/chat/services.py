@@ -261,7 +261,7 @@ def stream_chat_response(
             content=MSG_PROVIDER_AUTH_FAILED,
             message_id=error_msg.id,
         )
-        raise
+        return
     except ProviderRateLimitError as exc:
         from apps.chat.limits import decrement_global_budget, decrement_user_limit
 
@@ -312,7 +312,7 @@ def stream_chat_response(
             content=MSG_PROVIDER_ERROR,
             message_id=error_msg.id,
         )
-        raise
+        return
 
     latency_ms = int((time.monotonic() - start_time) * 1000)
     full_text = "".join(full_response)

@@ -43,3 +43,24 @@ export function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }
+
+/**
+ * Extract a user-friendly error message from an API error.
+ * Handles the backend's `{error: {message}}` envelope, Axios errors,
+ * and falls back to the native Error message.
+ */
+export function getApiErrorMessage(err: unknown, fallback = 'Something went wrong. Please try again.'): string {
+  if (err && typeof err === 'object') {
+    // Axios error with backend envelope
+    const axiosErr = err as { response?: { data?: { error?: { message?: string } }; status?: number } }
+    const apiMsg = axiosErr.response?.data?.error?.message
+    if (apiMsg) return apiMsg
+
+    // Plain Error
+    if ('message' in err && typeof (err as Error).message === 'string') {
+      const msg = (err as Error).message
+      if (!msg.startsWith('Request failed with status code')) return msg
+    }
+  }
+  return fallback
+}

@@ -1,5 +1,7 @@
 # Testing
 
+The backend suite has **166 tests across 25 modules** (`backend/tests/test_*.py`). Run from the `backend/` directory with Docker Compose (see [setup.md](setup.md)).
+
 ## Test Pyramid
 
 AskDocs uses a three-level test strategy:
@@ -125,7 +127,7 @@ Run this sequence manually to verify the system works after a major change or be
    "
    ```
 
-3. **Upload a test document** (once document API is available in Phase 6; currently via Django shell):
+3. **Upload a test document** via `POST /api/v1/workspaces/{id}/documents/` (or via Django shell):
    ```python
    from apps.documents.models import Document
    from apps.documents.tasks import ingest_document

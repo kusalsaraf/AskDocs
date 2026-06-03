@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   getProvider,
@@ -14,9 +15,8 @@ export function useProvider(workspaceId: string | undefined) {
     queryFn: () => getProvider(workspaceId!),
     enabled: !!workspaceId,
     staleTime: 60_000,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    retry: (failureCount: number, error: any) => {
-      if (error?.response?.status === 403) return false
+    retry: (failureCount: number, error: Error) => {
+      if (isAxiosError(error) && error.response?.status === 403) return false
       return failureCount < 3
     },
   })
