@@ -7,6 +7,10 @@ logs/
 .idea/
 *.swp
 *.swo
+*~
+.env
+.env.local
+.env*.local
 
 # ── Frontend (Next.js) ────────────────────────────────────────────────────────
 frontend/node_modules/

@@ -1,6 +1,16 @@
+"""Custom exception classes and a unified DRF exception handler.
+
+All API error responses use a consistent JSON envelope::
+
+    {"error": {"code": "...", "message": "...", "details": {}}}
+
+The ``custom_exception_handler`` normalizes both ``AskDocsError``
+subclasses and standard DRF exceptions into this format.
+"""
 import logging
 from typing import Any
 
+from rest_framework import exceptions as drf_exceptions
 from rest_framework.response import Response
 from rest_framework.views import exception_handler as drf_exception_handler
 
@@ -8,6 +18,8 @@ logger = logging.getLogger(__name__)
 
 
 class AskDocsError(Exception):
+    """Base class for all application-specific errors."""
+
     status_code = 500
     default_detail = "Something went wrong."
     default_code = "internal_error"
@@ -84,11 +96,43 @@ class InvitationAlreadyAccepted(AskDocsError):
     default_detail = "This invitation has already been accepted."
 
 
-def custom_exception_handler(exc: Exception, context: dict[str, Any]) -> Response | None:
-    """Handle ``AskDocsError`` subclasses with structured JSON responses.
+# Maps DRF exception types to structured error codes
+_DRF_CODE_MAP: dict[type, str] = {
+    drf_exceptions.ValidationError: "validation_error",
+    drf_exceptions.AuthenticationFailed: "authentication_failed",
+    drf_exceptions.NotAuthenticated: "authentication_required",
+    drf_exceptions.PermissionDenied: "permission_denied",
+    drf_exceptions.NotFound: "not_found",
+    drf_exceptions.Throttled: "rate_limit_exceeded",
+    drf_exceptions.MethodNotAllowed: "method_not_allowed",
+    drf_exceptions.UnsupportedMediaType: "unsupported_media_type",
+}
 
-    Uses WARNING for client errors (4xx) and ERROR for server errors (5xx)
-    to avoid alert fatigue from expected user-facing failures.
+
+def _flatten_drf_detail(detail: Any) -> str:
+    """Convert DRF's nested error detail into a single user-facing string."""
+    if isinstance(detail, str):
+        return detail
+    if isinstance(detail, list):
+        return "; ".join(str(item) for item in detail)
+    if isinstance(detail, dict):
+        parts = []
+        for field, messages in detail.items():
+            if isinstance(messages, list):
+                msg = ", ".join(str(m) for m in messages)
+            else:
+                msg = str(messages)
+            parts.append(f"{field}: {msg}" if field != "non_field_errors" else msg)
+        return "; ".join(parts)
+    return str(detail)
+
+
+def custom_exception_handler(exc: Exception, context: dict[str, Any]) -> Response | None:
+    """Normalize all API exceptions into a consistent JSON error envelope.
+
+    Handles both ``AskDocsError`` subclasses and standard DRF exceptions
+    (validation, permission, auth, throttling, not-found). Uses WARNING
+    for 4xx and ERROR for 5xx to reduce alert fatigue.
     """
     if isinstance(exc, AskDocsError):
         log_level = logging.WARNING if exc.status_code < 500 else logging.ERROR
@@ -108,4 +152,27 @@ def custom_exception_handler(exc: Exception, context: dict[str, Any]) -> Respons
             },
             status=exc.status_code,
         )
-    return drf_exception_handler(exc, context)
+
+    response = drf_exception_handler(exc, context)
+    if response is not None:
+        code = _DRF_CODE_MAP.get(type(exc), "error")
+        detail = getattr(exc, "detail", str(exc))
+        message = _flatten_drf_detail(detail)
+
+        field_details = {}
+        if isinstance(detail, dict) and isinstance(exc, drf_exceptions.ValidationError):
+            field_details = detail
+
+        logger.warning(
+            "DRF error: %s",
+            message,
+            extra={"code": code, "status_code": response.status_code},
+        )
+        response.data = {
+            "error": {
+                "code": code,
+                "message": message,
+                "details": field_details,
+            }
+        }
+    return response

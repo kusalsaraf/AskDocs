@@ -13,6 +13,7 @@ import { useConversation, useUpdateTitle, useMessageSources } from '@/lib/hooks/
 import { useDocuments } from '@/lib/hooks/useDocuments'
 import { sendMessageStream } from '@/lib/api/chat'
 import type { Message, Citation } from '@/lib/types/domain'
+import { getApiErrorMessage } from '@/lib/utils'
 import { ERROR_CODES, queryKeys, DEFAULT_CONVERSATION_TITLE } from '@/lib/constants'
 
 export default function ConversationPage() {
@@ -23,7 +24,7 @@ export default function ConversationPage() {
   const queryClient  = useQueryClient()
 
   const { data: conversation, isLoading, isError } = useConversation(activeWorkspace?.id, params.id)
-  const { mutate: saveTitle } = useUpdateTitle(activeWorkspace?.id, params.id)
+  const { mutateAsync: saveTitle } = useUpdateTitle(activeWorkspace?.id, params.id)
   const { data: documents = [] } = useDocuments(activeWorkspace?.id)
   const noDocuments = !documents.some((d) => d.status === 'ready')
 
@@ -35,6 +36,7 @@ export default function ConversationPage() {
   const [activeCitationMsgId, setActiveCitationMsgId] = useState<string | null>(null)
   const [activeCitationIndex, setActiveCitationIndex] = useState<number | null>(null)
   const [isStreaming, setIsStreaming]                  = useState(false)
+  const [titleError, setTitleError]                    = useState<string | null>(null)
 
   const [initDone, setInitDone] = useState(false)
 
@@ -81,10 +83,18 @@ export default function ConversationPage() {
     }
   }
 
-  const handleTitleSave = () => {
-    if (titleDraft.trim() && titleDraft.trim() !== title) {
-      setTitle(titleDraft.trim())
-      saveTitle(titleDraft.trim())
+  const handleTitleSave = async () => {
+    const trimmed = titleDraft.trim()
+    if (trimmed && trimmed !== title) {
+      const previous = title
+      setTitle(trimmed)
+      setTitleError(null)
+      try {
+        await saveTitle(trimmed)
+      } catch (err) {
+        setTitle(previous)
+        setTitleError(getApiErrorMessage(err))
+      }
     }
     setEditingTitle(false)
   }
@@ -167,7 +177,6 @@ export default function ConversationPage() {
         setIsStreaming(false)
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [input, isStreaming, activeWorkspace, params.id, queryClient, scrollToBottom]
   )
 
@@ -194,14 +203,21 @@ export default function ConversationPage() {
           ?.citations.find((c) => c.id === activeCitationIndex)
       : null
 
-  useEffect(() => {
-    if (isError) router.replace('/chat')
-  }, [isError, router])
-
-  if (isLoading || isError) {
+  if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-indigo-500" />
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="text-center space-y-3">
+          <p className="text-sm text-muted-foreground">Conversation not found or was deleted.</p>
+          <a href="/chat" className="text-sm text-indigo-400 hover:underline">Start a new chat</a>
+        </div>
       </div>
     )
   }
@@ -243,6 +259,9 @@ export default function ConversationPage() {
                 </span>
                 <Pencil className="h-3 w-3 text-muted-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
               </button>
+            )}
+            {titleError && (
+              <span className="text-xs text-rose-400 shrink-0">{titleError}</span>
             )}
           </div>
 
@@ -310,11 +329,19 @@ function SourcePanelLoader({
   citationIndex: number
   onClose: () => void
 }) {
-  const { data: sources = [], isLoading } = useMessageSources(
+  const { data: sources = [], isLoading, isError } = useMessageSources(
     workspaceId,
     conversationId,
     messageId
   )
+
+  if (isError) {
+    return (
+      <aside className="w-[320px] shrink-0 border-l border-border/80 bg-card">
+        <div className="text-xs text-muted-foreground p-4">Could not load sources.</div>
+      </aside>
+    )
+  }
 
   if (isLoading) {
     return (

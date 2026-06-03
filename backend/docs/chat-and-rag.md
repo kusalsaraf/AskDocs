@@ -8,7 +8,7 @@ This document explains the retrieval-augmented generation pipeline: how a user's
 graph LR
     Q["User query"] --> E["Embed query\n(same model as chunks)"]
     E --> V["pgvector\nCosineDistance search"]
-    V --> F["Filter:\ndistance < 1 - min_score (0.5)\ntop_k = 5"]
+    V --> F["Filter:\ndistance < 1 - min_score (0.45)\ntop_k = 5"]
     F --> C["Retrieved chunks\n[{content, score, doc_id, page}]"]
 ```
 
@@ -19,7 +19,7 @@ def retrieve_chunks_for_query(
     workspace_id: UUID,
     query: str,
     top_k: int = 5,
-    min_score: float = 0.5,
+    min_score: float = 0.45,
 ) -> list[RetrievedChunk]:
     from pgvector.django import CosineDistance
 
@@ -35,7 +35,7 @@ def retrieve_chunks_for_query(
     ...
 ```
 
-`score = 1 - cosine_distance`. A score of 1.0 = identical vectors; 0.5 = the threshold. Chunks with score < 0.5 are excluded.
+`score = 1 - cosine_distance`. A score of 1.0 = identical vectors; 0.45 = the production threshold (`MIN_RETRIEVAL_SCORE` in `apps/core/constants.py`). Chunks below that score are excluded.
 
 The query is embedded with the same provider configured in `EMBEDDING_PROVIDER` (OpenAI or Gemini). Using the same embedding space for both documents and queries is required for the cosine similarity to be meaningful.
 
@@ -87,12 +87,12 @@ SYSTEM_PROMPT = (
 The full message list passed to the LLM:
 
 1. `{"role": "system", "content": SYSTEM_PROMPT}`
-2. Up to `CHAT_MAX_HISTORY_TURNS` (default: 6) prior messages from the conversation
+2. Up to `CHAT_MAX_HISTORY_TURNS` (default: 10) prior messages from the conversation
 3. `{"role": "user", "content": "[1] source: doc.pdf (p.12)\n{chunk_content}\n\n[2] ....\n\nQuestion: {query}"}`
 
 Each retrieved chunk is numbered `[N]` in the user message. The LLM is instructed to cite with the same notation; the citation extractor then maps `[1]` → the first chunk's UUID.
 
-**Conversation history** is bounded to prevent prompt bloat. The last 6 messages are included, oldest first.
+**Conversation history** is bounded to prevent prompt bloat. The last `CHAT_MAX_HISTORY_TURNS` messages are included, oldest first.
 
 ## The Streaming Pipeline
 

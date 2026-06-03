@@ -5,6 +5,7 @@ import { ChevronsUpDown, Plus } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { Workspace } from '@/lib/types/domain'
 import { adaptWorkspace } from '@/lib/types/domain'
+import { getApiErrorMessage } from '@/lib/utils'
 import { createWorkspace } from '@/lib/api/workspaces'
 import { queryKeys } from '@/lib/constants'
 import {
@@ -26,6 +27,7 @@ export function WorkspaceSwitcher({ workspace, workspaces, onSwitch }: Workspace
   const queryClient = useQueryClient()
   const [creating, setCreating] = useState(false)
   const [newName, setNewName] = useState('')
+  const [createError, setCreateError] = useState<string | null>(null)
 
   const { mutate: doCreate } = useMutation({
     mutationFn: () => createWorkspace(newName.trim()),
@@ -34,7 +36,9 @@ export function WorkspaceSwitcher({ workspace, workspaces, onSwitch }: Workspace
       onSwitch(adaptWorkspace(api))
       setCreating(false)
       setNewName('')
+      setCreateError(null)
     },
+    onError: (err) => setCreateError(getApiErrorMessage(err)),
   })
 
   return (
@@ -74,7 +78,7 @@ export function WorkspaceSwitcher({ workspace, workspaces, onSwitch }: Workspace
           <DropdownMenuSeparator />
           <DropdownMenuItem
             className="gap-2 text-muted-foreground"
-            onClick={() => setCreating(true)}
+            onClick={() => { setCreateError(null); setCreating(true) }}
           >
             <Plus className="h-3.5 w-3.5" />
             Create workspace…
@@ -98,6 +102,9 @@ export function WorkspaceSwitcher({ workspace, workspaces, onSwitch }: Workspace
               placeholder="Workspace name"
               className="w-full rounded-lg border border-border bg-muted/60 px-3 py-2 text-sm focus:outline-none focus:border-indigo-500/50"
             />
+            {createError && (
+              <p className="mt-2 text-xs text-rose-400">{createError}</p>
+            )}
             <div className="mt-3 flex justify-end gap-2">
               <button
                 onClick={() => setCreating(false)}

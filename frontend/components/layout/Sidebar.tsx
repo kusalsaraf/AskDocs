@@ -142,6 +142,7 @@ function ConversationItem({
       queryClient.invalidateQueries({ queryKey: queryKeys.conversations(workspaceId) })
       if (isActive) router.push('/chat')
     },
+    onError: () => { /* silently handled — conversation stays in list since invalidation won't happen */ },
   })
 
   return (

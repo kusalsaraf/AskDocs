@@ -98,7 +98,10 @@ def change_member_role(
     """Change a member's role, preventing removal of the sole admin."""
     from apps.workspaces.models import Membership
 
-    membership = Membership.objects.get(workspace=workspace, user=target_user)
+    try:
+        membership = Membership.objects.get(workspace=workspace, user=target_user)
+    except Membership.DoesNotExist:
+        raise NotFound("This user is not a member of the workspace.") from None
     if membership.role == Membership.Role.ADMIN and new_role != Membership.Role.ADMIN:
         admin_count = Membership.objects.filter(
             workspace=workspace, role=Membership.Role.ADMIN
@@ -114,7 +117,10 @@ def remove_member(workspace: Any, target_user: Any) -> None:
     """Remove a member from the workspace, preserving at least one admin."""
     from apps.workspaces.models import Membership
 
-    membership = Membership.objects.get(workspace=workspace, user=target_user)
+    try:
+        membership = Membership.objects.get(workspace=workspace, user=target_user)
+    except Membership.DoesNotExist:
+        raise NotFound("This user is not a member of the workspace.") from None
     if membership.role == Membership.Role.ADMIN:
         admin_count = Membership.objects.filter(
             workspace=workspace, role=Membership.Role.ADMIN

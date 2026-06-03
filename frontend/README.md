@@ -1,65 +1,68 @@
 # AskDocs — Frontend
 
-Next.js 14 frontend for AskDocs. Runs entirely on mock data — no backend required to explore the UI.
+Next.js 14 single-page application built with TypeScript, Tailwind CSS, and shadcn/ui. Connects to the Django REST backend via Axios with JWT authentication and streams chat responses via Server-Sent Events.
 
-[![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)](https://nextjs.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3-38bdf8?logo=tailwindcss)](https://tailwindcss.com)
-[![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-latest-black)](https://ui.shadcn.com)
+## Screens
 
-## Running locally
+| Screen | Route | Description |
+|--------|-------|-------------|
+| **Landing** | `/` | Marketing page with feature overview and call-to-action |
+| **Sign In** | `/sign-in` | Google OAuth authentication |
+| **Chat** | `/chat`, `/chat/[id]` | Conversational RAG interface with real-time token streaming and inline citations |
+| **Documents** | `/documents` | Upload, view status, and manage workspace documents (PDF, DOCX, TXT) |
+| **Settings** | `/settings` | AI provider config (BYOK), workspace management, member invitations, usage dashboard |
+| **Invite** | `/invite/[token]` | Workspace invitation acceptance flow |
+
+## Tech Stack
+
+- **Next.js 14** — App Router with file-based routing
+- **TypeScript 5** — Strict mode throughout
+- **Tailwind CSS** — Utility-first styling with `tailwind-merge`
+- **shadcn/ui** — Radix primitives with consistent design
+- **TanStack Query** — Server state management with query key factories
+- **Axios** — API client with JWT interceptors and automatic token refresh
+- **react-markdown** — Rich message rendering with citation support
+
+## Getting Started
 
 ```bash
+cp .env.example .env.local    # configure environment variables
 npm install
-npm run dev
+npm run dev                   # runs on http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Requires the backend to be running at the URL specified in `NEXT_PUBLIC_API_URL`.
 
-## Project structure
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `NEXT_PUBLIC_API_URL` | Yes | Backend API base URL (default: `http://localhost:8000/api/v1`) |
+| `NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID` | Yes | Google OAuth 2.0 Client ID for sign-in |
+
+## Project Structure
 
 ```
 frontend/
 ├── app/
-│   ├── (app)/              # Authenticated app shell
-│   │   ├── chat/           # Chat list + conversation view
-│   │   ├── documents/      # Document library
-│   │   ├── settings/       # Workspace, AI provider, members, billing
-│   │   └── layout.tsx      # App shell with sidebar
-│   ├── (auth)/
-│   │   └── sign-in/        # Sign-in page
-│   ├── globals.css
-│   ├── layout.tsx          # Root layout (fonts, ThemeProvider)
-│   └── page.tsx            # Public marketing landing page
+│   ├── (app)/           → Authenticated routes (chat, documents, settings)
+│   ├── (auth)/          → Sign-in page
+│   ├── invite/          → Invitation acceptance
+│   ├── error.tsx        → Root error boundary
+│   ├── layout.tsx       → Root layout with providers
+│   └── page.tsx         → Landing / marketing page
 ├── components/
-│   ├── chat/               # ChatMessage, ChatInput, SourcePanel, CitationBadge
-│   ├── documents/          # DocumentCard, UploadModal, StatusBadge
-│   ├── layout/             # Sidebar, WorkspaceSwitcher, UserMenu, ThemeProvider
-│   └── ui/                 # shadcn/ui primitives + RelativeTime
-├── lib/
-│   ├── types.ts            # TypeScript types
-│   ├── mock-data.ts        # Mock data for UI development
-│   └── utils.ts            # cn(), formatFileSize(), formatRelativeTime()
-├── package.json
-├── tailwind.config.ts
-└── tsconfig.json
+│   ├── chat/            → ChatMessage, ChatInput, SourcePanel
+│   ├── documents/       → DocumentCard, UploadModal, StatusBadge
+│   ├── layout/          → Sidebar, WorkspaceSwitcher, ThemeToggle
+│   └── ui/              → shadcn/ui primitives (Button, Dialog, etc.)
+└── lib/
+    ├── api/             → Axios client, auth helpers, chat streaming
+    ├── contexts/        → AuthContext, WorkspaceContext
+    ├── hooks/           → useChat, useDocuments, useProviders (React Query)
+    ├── constants.ts     → Centralized config, routes, query keys
+    ├── logger.ts        → Structured logging (error/warn active in production)
+    └── utils.ts         → Shared helpers (cn, formatRelativeTime, getApiErrorMessage)
 ```
 
-## Tech stack
-
-| | |
-|---|---|
-| Framework | Next.js 14 (App Router) |
-| Language | TypeScript 5 |
-| Styling | Tailwind CSS v3, shadcn/ui |
-| Icons | lucide-react |
-| Theming | next-themes (dark/light, class-based) |
-
-## Features implemented
-
-- **Marketing landing page** — hero with HTML/CSS chat mock, features grid, how-it-works, tech stack, CTA, footer
-- **Sign-in page** — Google OAuth button (stubbed), demo shortcut, theme toggle
-- **Chat** — conversation list in sidebar, message thread with streaming cursor, inline citation badges, source panel
-- **Documents** — grid/list view, skeleton loading, upload modal with drag-and-drop, progress bars, file validation, tag input
-- **Workspace settings** — AI provider configuration, member management, billing (all with mock data)
-- **Dark/light theme** — full semantic color system via CSS variables; every component responds to toggle
+For full architecture and design details, see the [root README](../README.md).

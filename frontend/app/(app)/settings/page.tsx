@@ -6,7 +6,7 @@ import {
   Loader2, UserPlus, MoreHorizontal, Zap, Check, Copy, RotateCcw,
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { cn, formatRelativeTime } from '@/lib/utils'
+import { cn, formatRelativeTime, getApiErrorMessage } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -157,6 +157,8 @@ function AIProviderTab() {
 
   const [defaultTestStatus, setDefaultTestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [defaultTestMessage, setDefaultTestMessage] = useState('')
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [switchError, setSwitchError] = useState<string | null>(null)
 
   // Seed form from live provider config
   useEffect(() => {
@@ -206,9 +208,14 @@ function AIProviderTab() {
   }
 
   const handleSwitchToDefault = async () => {
-    await doDelete()
-    setDefaultTestStatus('idle')
-    setDefaultTestMessage('')
+    setSwitchError(null)
+    try {
+      await doDelete()
+      setDefaultTestStatus('idle')
+      setDefaultTestMessage('')
+    } catch (err) {
+      setSwitchError(getApiErrorMessage(err))
+    }
   }
 
   const handleConfigChange = (newConfig: ProviderConfig) => {
@@ -245,14 +252,19 @@ function AIProviderTab() {
   }
 
   const handleSave = async () => {
-    await doSave({
-      provider_name: providerKeyToBackend(config.provider),
-      api_key:       config.apiKey,
-      model_name:    config.model,
-      temperature:   config.temperature,
-      max_tokens:    config.maxTokens,
-      base_url:      config.baseUrl || undefined,
-    })
+    setSaveError(null)
+    try {
+      await doSave({
+        provider_name: providerKeyToBackend(config.provider),
+        api_key:       config.apiKey,
+        model_name:    config.model,
+        temperature:   config.temperature,
+        max_tokens:    config.maxTokens,
+        base_url:      config.baseUrl || undefined,
+      })
+    } catch (err) {
+      setSaveError(getApiErrorMessage(err))
+    }
   }
 
   const activeProviderDef =
@@ -333,6 +345,7 @@ function AIProviderTab() {
           isSaving={isSaving}
           onTest={handleTest}
           onSave={handleSave}
+          saveError={saveError}
           supportedModels={supportedMap.get(providerKeyToBackend(selectedProvider))?.available_models ?? []}
         />
       ) : (
@@ -377,6 +390,9 @@ function AIProviderTab() {
                   </span>
                 )}
               </div>
+              {switchError && (
+                <p className="text-xs text-rose-400">{switchError}</p>
+              )}
             </div>
           )}
         </div>
@@ -495,7 +511,7 @@ function ModelCombobox({
 }
 
 function ConfigForm({
-  provider, config, onChange, testStatus, testMessage, isSaving, onTest, onSave, supportedModels,
+  provider, config, onChange, testStatus, testMessage, isSaving, onTest, onSave, saveError, supportedModels,
 }: {
   provider: ProviderKey
   config: ProviderConfig
@@ -505,6 +521,7 @@ function ConfigForm({
   isSaving: boolean
   onTest: () => void
   onSave: () => void
+  saveError?: string | null
   supportedModels: string[]
 }) {
   const [showKey, setShowKey] = useState(false)
@@ -625,6 +642,9 @@ function ConfigForm({
             </span>
           )}
         </div>
+        {saveError && (
+          <p className="text-xs text-rose-400 pt-1">{saveError}</p>
+        )}
       </div>
     </div>
   )
@@ -636,13 +656,16 @@ function WorkspaceTab() {
   const { activeWorkspace } = useWorkspace()
   const queryClient = useQueryClient()
   const [saved, setSaved] = useState(false)
+  const [workspaceError, setWorkspaceError] = useState<string | null>(null)
   const { mutate: doUpdate, isPending } = useMutation({
     mutationFn: (name: string) => updateWorkspace(activeWorkspace!.id, name),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.me() })
       setSaved(true)
+      setWorkspaceError(null)
       setTimeout(() => setSaved(false), SAVE_FEEDBACK_MS)
     },
+    onError: (err) => setWorkspaceError(getApiErrorMessage(err)),
   })
   const [name, setName] = useState(activeWorkspace?.name ?? '')
   useEffect(() => { setName(activeWorkspace?.name ?? '') }, [activeWorkspace?.name])
@@ -671,6 +694,9 @@ function WorkspaceTab() {
               Workspace updated
             </span>
           )}
+          {workspaceError && (
+            <p className="text-xs text-rose-400">{workspaceError}</p>
+          )}
         </div>
       </Section>
     </div>
@@ -684,8 +710,10 @@ function MembersTab() {
   const queryClient = useQueryClient()
   const [inviteEmail, setInviteEmail] = useState('')
   const [showInvite, setShowInvite]   = useState(false)
+  const [inviteError, setInviteError] = useState<string | null>(null)
+  const [removeError, setRemoveError] = useState<string | null>(null)
 
-  const { data: rawMembers = [], isLoading } = useQuery({
+  const { data: rawMembers = [], isLoading, isError: membersError } = useQuery({
     queryKey: queryKeys.members(activeWorkspace?.id),
     queryFn:  () => listMembers(activeWorkspace!.id),
     enabled:  !!activeWorkspace,
@@ -694,7 +722,7 @@ function MembersTab() {
   })
   const isAdmin = activeWorkspace?.role === 'admin'
 
-  const { data: rawInvites = [] } = useQuery({
+  const { data: rawInvites = [], isError: invitationsError } = useQuery({
     queryKey: queryKeys.invitations(activeWorkspace?.id),
     queryFn:  () => listInvitations(activeWorkspace!.id),
     enabled:  !!activeWorkspace && isAdmin,
@@ -707,7 +735,11 @@ function MembersTab() {
 
   const { mutate: doRemove } = useMutation({
     mutationFn: (userId: string) => removeMember(activeWorkspace!.id, userId),
-    onSuccess:  () => queryClient.invalidateQueries({ queryKey: queryKeys.members(activeWorkspace?.id) }),
+    onSuccess:  () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.members(activeWorkspace?.id) })
+      setRemoveError(null)
+    },
+    onError: (err) => setRemoveError(getApiErrorMessage(err)),
   })
   const { mutate: doInvite, isPending: isInviting } = useMutation({
     mutationFn: () => inviteMember(activeWorkspace!.id, inviteEmail, 'member'),
@@ -715,7 +747,9 @@ function MembersTab() {
       queryClient.invalidateQueries({ queryKey: queryKeys.invitations(activeWorkspace?.id) })
       setInviteEmail('')
       setShowInvite(false)
+      setInviteError(null)
     },
+    onError: (err) => setInviteError(getApiErrorMessage(err)),
   })
 
   if (isLoading) {
@@ -734,12 +768,19 @@ function MembersTab() {
           <p className="text-xs text-muted-foreground mt-0.5">{activeWorkspace?.name}</p>
         </div>
         {isAdmin && (
-          <Button size="sm" className="gap-2" onClick={() => setShowInvite(true)}>
+          <Button size="sm" className="gap-2" onClick={() => { setInviteError(null); setShowInvite(true) }}>
             <UserPlus className="h-3.5 w-3.5" />
             Invite member
           </Button>
         )}
       </div>
+
+      {(membersError || invitationsError) && (
+        <p className="text-xs text-rose-400">Failed to load members data. Please refresh the page.</p>
+      )}
+      {removeError && (
+        <p className="text-xs text-rose-400">{removeError}</p>
+      )}
 
       {/* Invite form */}
       {showInvite && (
@@ -760,6 +801,9 @@ function MembersTab() {
             </Button>
             <Button variant="ghost" size="sm" onClick={() => setShowInvite(false)}>Cancel</Button>
           </div>
+          {inviteError && (
+            <p className="text-xs text-rose-400">{inviteError}</p>
+          )}
         </div>
       )}
 
@@ -859,13 +903,17 @@ function MembersTab() {
 function UsageTab() {
   const { activeWorkspace } = useWorkspace()
   const isAdmin = activeWorkspace?.role === 'admin'
-  const { data: quota, isLoading } = useQuery({
+  const { data: quota, isLoading, isError: quotaError } = useQuery({
     queryKey: queryKeys.quota(activeWorkspace?.id),
     queryFn:  () => getQuota(activeWorkspace!.id),
     enabled:  !!activeWorkspace,
     staleTime: 0,
     refetchInterval: 15_000,
   })
+
+  if (quotaError) {
+    return <div className="text-sm text-rose-400 px-6 py-8">Failed to load usage data.</div>
+  }
 
   if (isLoading || !quota) {
     return (
