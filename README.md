@@ -12,7 +12,23 @@
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://docker.com)
 [![Tests](https://img.shields.io/badge/Tests-166_passing-brightgreen)](backend/tests/)
 
-> :camera: **[Screenshots and demo video coming soon]**
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/landing-page.png" width="800" alt="Landing page" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/chat-interface.png" width="800" alt="Chat with inline citations" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/documents-library.png" width="800" alt="Document library" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/settings-provider.png" width="800" alt="BYOK provider configuration" />
+</p>
 
 > :link: **Live demo:** _Coming soon_ | :movie_camera: **Walkthrough:** _Coming soon_
 
