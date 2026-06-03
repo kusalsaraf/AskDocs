@@ -46,6 +46,15 @@ export async function testProvider(
   return data
 }
 
+export async function testDefaultProvider(
+  workspaceId: string
+): Promise<ApiTestConnectionResult> {
+  const { data } = await apiClient.post<ApiTestConnectionResult>(
+    `/workspaces/${workspaceId}/provider/test-default/`
+  )
+  return data
+}
+
 export async function listSupportedProviders(): Promise<ApiSupportedProvider[]> {
   const { data } = await apiClient.get<ApiSupportedProvider[]>('/providers/supported/')
   return data

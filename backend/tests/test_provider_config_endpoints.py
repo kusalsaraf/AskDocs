@@ -10,7 +10,7 @@ def test_get_returns_default_response_when_no_config(auth_client, workspace):
     response = auth_client.get(_url(workspace.id))
     assert response.status_code == 200
     data = response.json()
-    assert data["is_default"] is True
+    assert data["using_platform_default"] is True
     assert data["provider_name"] == "gemini"
 
 
@@ -74,7 +74,7 @@ def test_delete_removes_config(auth_client, workspace):
     assert response.status_code == 204
 
     get_response = auth_client.get(_url(workspace.id))
-    assert get_response.json()["is_default"] is True
+    assert get_response.json()["using_platform_default"] is True
 
 
 @pytest.mark.django_db

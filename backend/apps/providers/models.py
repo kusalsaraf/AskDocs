@@ -1,9 +1,14 @@
+"""Per-workspace LLM provider configuration and credentials."""
+
 from django.db import models
 
+from apps.core.constants import DEFAULT_MAX_TOKENS, DEFAULT_TEMPERATURE
 from apps.core.models import BaseModel
 
 
 class ProviderConfig(BaseModel):
+    """Workspace-scoped LLM provider settings and encrypted API key."""
+
     class Provider(models.TextChoices):
         OPENAI = "openai", "OpenAI"
         ANTHROPIC = "anthropic", "Anthropic"
@@ -29,8 +34,8 @@ class ProviderConfig(BaseModel):
     base_url = models.URLField(null=True, blank=True)
     azure_region = models.CharField(max_length=100, null=True, blank=True)
     model_name = models.CharField(max_length=255)
-    temperature = models.FloatField(default=0.7)
-    max_tokens = models.PositiveIntegerField(default=2048)
+    temperature = models.FloatField(default=DEFAULT_TEMPERATURE)
+    max_tokens = models.PositiveIntegerField(default=DEFAULT_MAX_TOKENS)
     last_tested_at = models.DateTimeField(null=True, blank=True)
     last_test_status = models.CharField(
         max_length=10,

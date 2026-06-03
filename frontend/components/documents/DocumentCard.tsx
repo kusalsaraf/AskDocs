@@ -10,7 +10,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
@@ -28,12 +27,13 @@ interface DocumentCardProps {
   document: Document
   onClick?: () => void
   onDelete?: () => void
+  canDelete?: boolean
 }
 
-export function DocumentCard({ document: doc, onClick, onDelete }: DocumentCardProps) {
+export function DocumentCard({ document: doc, onClick, onDelete, canDelete = true }: DocumentCardProps) {
   const [hovered, setHovered]   = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const showKebab = hovered || menuOpen
+  const showKebab = canDelete && (hovered || menuOpen)
   const styles    = FILE_STYLES[doc.type] ?? FILE_STYLES.unknown
 
   return (
@@ -49,7 +49,7 @@ export function DocumentCard({ document: doc, onClick, onDelete }: DocumentCardP
           : 'border-border'
       )}
     >
-      {/* Kebab */}
+      {canDelete && (
       <div
         className={cn(
           'absolute top-2.5 right-2.5 z-10 transition-opacity duration-100',
@@ -67,7 +67,6 @@ export function DocumentCard({ document: doc, onClick, onDelete }: DocumentCardP
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={(e) => { e.stopPropagation(); onDelete?.() }}
               className="text-rose-400 focus:text-rose-300 focus:bg-rose-500/10"
@@ -77,6 +76,7 @@ export function DocumentCard({ document: doc, onClick, onDelete }: DocumentCardP
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      )}
 
       {/* File type icon */}
       <div className={cn('flex h-9 w-9 items-center justify-center rounded-lg', styles.bg)}>
@@ -106,9 +106,10 @@ interface DocumentRowProps {
   document: Document
   onClick?: () => void
   onDelete?: () => void
+  canDelete?: boolean
 }
 
-export function DocumentRow({ document: doc, onClick, onDelete }: DocumentRowProps) {
+export function DocumentRow({ document: doc, onClick, onDelete, canDelete = true }: DocumentRowProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const styles = FILE_STYLES[doc.type] ?? FILE_STYLES.unknown
 
@@ -128,25 +129,26 @@ export function DocumentRow({ document: doc, onClick, onDelete }: DocumentRowPro
       <span className="text-xs text-muted-foreground truncate">{doc.uploadedBy.name}</span>
       <RelativeTime date={doc.uploadedAt} className="text-xs text-muted-foreground" />
       <StatusBadge status={doc.status} />
-      <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
-        <DropdownMenuTrigger asChild>
-          <button
-            onClick={(e) => e.stopPropagation()}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground/60 hover:text-foreground/70 hover:bg-muted opacity-0 group-hover:opacity-100 transition-all"
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-44">
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            className="text-rose-400 focus:text-rose-300 focus:bg-rose-500/10"
-            onClick={(e) => { e.stopPropagation(); onDelete?.() }}
-          >
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {canDelete ? (
+        <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+          <DropdownMenuTrigger asChild>
+            <button
+              onClick={(e) => e.stopPropagation()}
+              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground/60 hover:text-foreground/70 hover:bg-muted opacity-0 group-hover:opacity-100 transition-all"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuItem
+              className="text-rose-400 focus:text-rose-300 focus:bg-rose-500/10"
+              onClick={(e) => { e.stopPropagation(); onDelete?.() }}
+            >
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : <div />}
     </div>
   )
 }

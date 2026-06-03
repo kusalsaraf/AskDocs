@@ -5,6 +5,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+pypdf = pytest.importorskip("pypdf", reason="pypdf not installed")
+
 from apps.documents.exceptions import ParserStrategyUnavailable
 from apps.documents.parsing.pypdf_provider import PypdfParserProvider
 

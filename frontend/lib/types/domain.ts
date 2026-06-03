@@ -70,7 +70,7 @@ export interface Document {
   type: DocumentType
   size: number           // file_size_bytes
   uploadedAt: Date       // created_at
-  uploadedBy: { name: string }
+  uploadedBy: { id: string; name: string }
   status: DocumentStatus
   errorMessage: string
 }
@@ -91,7 +91,7 @@ export function adaptDocument(api: ApiDocument): Document {
     type: inferType(api.filename),
     size: api.file_size_bytes,
     uploadedAt: new Date(api.created_at),
-    uploadedBy: { name: api.uploaded_by?.display_name ?? 'Unknown' },
+    uploadedBy: { id: api.uploaded_by?.id ?? '', name: api.uploaded_by?.display_name ?? 'Unknown' },
     status: api.status,
     errorMessage: api.error_message,
   }
@@ -184,16 +184,11 @@ export type ProviderKey =
   | 'openai'
   | 'anthropic'
   | 'google-gemini'
-  | 'azure-openai'
-  | 'mistral'
-  | 'groq'
-  | 'ollama'
 
 export interface ProviderConfig {
   provider: ProviderKey
   apiKey?: string
   baseUrl?: string
-  region?: string
   model: string
   temperature: number
   maxTokens: number
@@ -203,11 +198,9 @@ export interface ProviderConfig {
 
 const _BACKEND_TO_FRONTEND: Record<string, ProviderKey> = {
   gemini: 'google-gemini',
-  azure:  'azure-openai',
 }
 const _FRONTEND_TO_BACKEND: Partial<Record<ProviderKey, string>> = {
   'google-gemini': 'gemini',
-  'azure-openai':  'azure',
 }
 
 export function backendToProviderKey(name: string): ProviderKey {
@@ -225,7 +218,6 @@ export function adaptProviderConfig(api: ApiProviderConfig): ProviderConfig {
     temperature: api.temperature,
     maxTokens: api.max_tokens,
     baseUrl: api.base_url ?? undefined,
-    region: api.azure_region ?? undefined,
     lastTestStatus: api.last_test_status,
     apiKeyLast4: api.api_key_last_4,
   }

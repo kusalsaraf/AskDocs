@@ -1,17 +1,23 @@
+"""OpenAI text embedding provider using ``text-embedding-3-small``."""
 from __future__ import annotations
 
 import openai
 from django.conf import settings
 
+from apps.core.constants import EMBEDDING_DIMENSIONS, OPENAI_EMBEDDING_MODEL
+from apps.core.logging import get_logger
 from apps.documents.embeddings.base import BaseEmbeddingProvider
 
-_MODEL = "text-embedding-3-small"
-# Matches the existing VectorField(dimensions=768). OpenAI supports Matryoshka truncation
-# via the `dimensions` parameter, so we get 768-dim vectors without a schema migration.
-_DIMENSIONS = 768
+logger = get_logger(__name__)
 
 
 class OpenAIEmbeddingProvider(BaseEmbeddingProvider):
+    """Generate 768-dim embeddings via the OpenAI embeddings API.
+
+    Uses Matryoshka truncation (``dimensions`` param) to produce
+    768-dim vectors from the ``text-embedding-3-small`` model.
+    """
+
     def __init__(self) -> None:
         self._client = openai.OpenAI(
             api_key=settings.DEFAULT_PLATFORM_OPENAI_API_KEY,
@@ -19,9 +25,26 @@ class OpenAIEmbeddingProvider(BaseEmbeddingProvider):
         )
 
     def embed(self, text: str) -> list[float]:
-        resp = self._client.embeddings.create(
-            model=_MODEL,
-            input=text,
-            dimensions=_DIMENSIONS,
-        )
-        return resp.data[0].embedding
+        """Return a 768-dimensional embedding for *text*.
+
+        Raises:
+            openai.AuthenticationError: Invalid API key.
+            openai.RateLimitError: Quota exceeded.
+            openai.APIError: Transient API failure.
+        """
+        try:
+            resp = self._client.embeddings.create(
+                model=OPENAI_EMBEDDING_MODEL,
+                input=text,
+                dimensions=EMBEDDING_DIMENSIONS,
+            )
+            return resp.data[0].embedding
+        except openai.AuthenticationError:
+            logger.error("OpenAI embedding auth failed — check DEFAULT_PLATFORM_OPENAI_API_KEY")
+            raise
+        except openai.RateLimitError:
+            logger.warning("OpenAI embedding rate limit hit")
+            raise
+        except Exception:
+            logger.exception("OpenAI embedding request failed")
+            raise

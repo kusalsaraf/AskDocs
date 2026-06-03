@@ -7,6 +7,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { acceptInvitation } from '@/lib/api/workspaces'
+import { STORAGE_KEYS, queryKeys, ROUTES } from '@/lib/constants'
 
 type PageState =
   | 'loading'
@@ -37,7 +38,7 @@ export default function InviteAcceptPage() {
       setState('accepting')
       try {
         await loginWithGoogle(tokenResponse.access_token)
-        router.replace('/chat')
+        router.replace(ROUTES.CHAT)
       } catch {
         setState('error')
       }
@@ -48,12 +49,14 @@ export default function InviteAcceptPage() {
   const tryAccept = () => {
     setState('accepting')
     acceptInvitation(params.token)
-      .then(async () => {
-        // Refresh me so the new workspace appears immediately after redirect
-        await queryClient.invalidateQueries({ queryKey: ['me'] })
-        queryClient.invalidateQueries({ queryKey: ['members'] })
-        queryClient.invalidateQueries({ queryKey: ['invitations'] })
-        router.replace('/chat')
+      .then(async ({ workspace_id }) => {
+        if (workspace_id) {
+          localStorage.setItem(STORAGE_KEYS.ACTIVE_WORKSPACE, workspace_id)
+        }
+        await queryClient.invalidateQueries({ queryKey: queryKeys.me() })
+        queryClient.invalidateQueries({ queryKey: queryKeys.members() })
+        queryClient.invalidateQueries({ queryKey: queryKeys.invitations() })
+        router.replace(ROUTES.CHAT)
       })
       .catch((err) => {
         const status = err?.response?.status
@@ -68,16 +71,12 @@ export default function InviteAcceptPage() {
   useEffect(() => {
     if (isLoading) return
     if (!isAuthenticated) {
-      localStorage.setItem('pending_invite', params.token)
+      localStorage.setItem(STORAGE_KEYS.PENDING_INVITE, params.token)
       setState('unauthenticated')
       return
     }
-    // If AuthContext already handled acceptance (it clears pending_invite first),
-    // just redirect rather than double-calling acceptInvitation.
-    if (!localStorage.getItem('pending_invite')) {
-      router.replace('/chat')
-      return
-    }
+    // Always try to accept when authenticated, regardless of pending_invite
+    localStorage.removeItem(STORAGE_KEYS.PENDING_INVITE)
     tryAccept()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, isLoading])
@@ -138,14 +137,14 @@ export default function InviteAcceptPage() {
             <CheckCircle className="h-10 w-10 text-emerald-400" />
             <div>
               <h1 className="text-base font-semibold text-foreground">
-                You're already in {workspaceName}
+                You&apos;re already in {workspaceName}
               </h1>
               <p className="mt-1 text-sm text-muted-foreground">
                 You already have access to this workspace.
               </p>
             </div>
             <button
-              onClick={() => router.replace('/chat')}
+              onClick={() => router.replace(ROUTES.CHAT)}
               className="w-full rounded-lg bg-indigo-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-600 transition-colors"
             >
               Go to workspace →

@@ -81,18 +81,22 @@ def test_is_workspace_admin_blocks_member(factory: APIRequestFactory) -> None:
 
 
 @pytest.mark.django_db
-def test_is_workspace_member_or_admin_blocks_viewer(factory: APIRequestFactory) -> None:
+def test_is_workspace_member_or_admin_allows_viewer_read(factory: APIRequestFactory) -> None:
+    """Viewers now have read-only access (GET/HEAD/OPTIONS)."""
     admin = User.objects.create_user(email="perm_admin3@example.com")
     viewer_user = User.objects.create_user(email="perm_viewer@example.com")
     ws = Workspace.objects.filter(memberships__user=admin).first()
     assert ws is not None
     Membership.objects.create(workspace=ws, user=viewer_user, role=Membership.Role.VIEWER)
 
-    request = factory.get("/")
-    request.user = viewer_user  # type: ignore[attr-defined]
-
     view = MagicMock()
     view.kwargs = {"pk": str(ws.id)}
-
     perm = IsWorkspaceMemberOrAdmin()
-    assert perm.has_permission(request, view) is False  # type: ignore[arg-type]
+
+    get_request = factory.get("/")
+    get_request.user = viewer_user  # type: ignore[attr-defined]
+    assert perm.has_permission(get_request, view) is True  # type: ignore[arg-type]
+
+    post_request = factory.post("/")
+    post_request.user = viewer_user  # type: ignore[attr-defined]
+    assert perm.has_permission(post_request, view) is False  # type: ignore[arg-type]

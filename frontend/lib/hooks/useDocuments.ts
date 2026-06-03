@@ -7,10 +7,11 @@ import {
 } from '@/lib/api/documents'
 import { adaptDocument } from '@/lib/types/domain'
 import type { Document } from '@/lib/types/domain'
+import { queryKeys } from '@/lib/constants'
 
 export function useDocuments(workspaceId: string | undefined) {
   return useQuery({
-    queryKey: ['documents', workspaceId],
+    queryKey: queryKeys.documents(workspaceId),
     queryFn: async () => {
       const docs = await listDocuments(workspaceId!)
       return docs.map(adaptDocument)
@@ -26,7 +27,7 @@ export function useDocumentStatus(
   currentStatus: Document['status'] | undefined
 ) {
   return useQuery({
-    queryKey: ['document', workspaceId, documentId],
+    queryKey: queryKeys.document(workspaceId, documentId),
     queryFn: async () => adaptDocument(await getDocument(workspaceId!, documentId!)),
     enabled:
       !!workspaceId &&
@@ -50,7 +51,7 @@ export function useUploadDocument(workspaceId: string | undefined) {
       onProgress?: (pct: number) => void
     }) => uploadDocument(workspaceId!, file, onProgress).then(adaptDocument),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['documents', workspaceId] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.documents(workspaceId) })
     },
   })
 }
@@ -60,7 +61,7 @@ export function useDeleteDocument(workspaceId: string | undefined) {
   return useMutation({
     mutationFn: (documentId: string) => deleteDocument(workspaceId!, documentId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['documents', workspaceId] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.documents(workspaceId) })
     },
   })
 }

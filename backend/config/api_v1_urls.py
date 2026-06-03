@@ -12,7 +12,7 @@ from apps.chat.views import (
     QuotaView,
 )
 from apps.documents.views import DocumentDetailView, DocumentListCreateView
-from apps.providers.views import ProviderConfigView, ProviderTestView, SupportedProvidersView
+from apps.providers.views import ProviderConfigView, ProviderTestView, ProviderTestDefaultView, SupportedProvidersView
 from apps.workspaces.views import (
     InvitationAcceptView,
     InvitationResendView,
@@ -72,6 +72,11 @@ urlpatterns: list[URLPattern] = [
         "workspaces/<uuid:workspace_id>/provider/test/",
         ProviderTestView.as_view(),
         name="provider-test",
+    ),
+    path(
+        "workspaces/<uuid:workspace_id>/provider/test-default/",
+        ProviderTestDefaultView.as_view(),
+        name="provider-test-default",
     ),
     # Public provider metadata (no auth required)
     path(

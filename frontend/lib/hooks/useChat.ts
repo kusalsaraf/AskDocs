@@ -11,10 +11,11 @@ import {
   adaptConversationSummary,
   adaptConversation,
 } from '@/lib/types/domain'
+import { queryKeys } from '@/lib/constants'
 
 export function useConversations(workspaceId: string | undefined) {
   return useQuery({
-    queryKey: ['conversations', workspaceId],
+    queryKey: queryKeys.conversations(workspaceId),
     queryFn: async () =>
       (await listConversations(workspaceId!)).map(adaptConversationSummary),
     enabled: !!workspaceId,
@@ -27,7 +28,7 @@ export function useConversation(
   conversationId: string | undefined
 ) {
   return useQuery({
-    queryKey: ['conversation', workspaceId, conversationId],
+    queryKey: queryKeys.conversation(workspaceId, conversationId),
     queryFn: async () =>
       adaptConversation(await getConversation(workspaceId!, conversationId!)),
     enabled: !!workspaceId && !!conversationId,
@@ -40,7 +41,7 @@ export function useCreateConversation(workspaceId: string | undefined) {
   return useMutation({
     mutationFn: () => createConversation(workspaceId!),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['conversations', workspaceId] }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.conversations(workspaceId) }),
   })
 }
 
@@ -50,7 +51,7 @@ export function useDeleteConversation(workspaceId: string | undefined) {
     mutationFn: (conversationId: string) =>
       deleteConversation(workspaceId!, conversationId),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['conversations', workspaceId] }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.conversations(workspaceId) }),
   })
 }
 
@@ -63,9 +64,9 @@ export function useUpdateTitle(
     mutationFn: (title: string) =>
       updateConversationTitle(workspaceId!, conversationId!, title),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['conversations', workspaceId] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.conversations(workspaceId) })
       queryClient.invalidateQueries({
-        queryKey: ['conversation', workspaceId, conversationId],
+        queryKey: queryKeys.conversation(workspaceId, conversationId),
       })
     },
   })
@@ -77,7 +78,7 @@ export function useMessageSources(
   messageId: string | undefined
 ) {
   return useQuery({
-    queryKey: ['sources', workspaceId, conversationId, messageId],
+    queryKey: queryKeys.sources(workspaceId, conversationId, messageId),
     queryFn: () => getMessageSources(workspaceId!, conversationId!, messageId!),
     enabled: !!workspaceId && !!conversationId && !!messageId,
     staleTime: Infinity,

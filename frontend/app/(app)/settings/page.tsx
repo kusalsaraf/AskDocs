@@ -10,31 +10,41 @@ import { cn, formatRelativeTime } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuTrigger, DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { useWorkspace } from '@/lib/hooks/useWorkspace'
 import {
   useProvider, useSupportedProviders, useSaveProvider,
-  useTestProvider,
+  useDeleteProvider, useTestProvider,
 } from '@/lib/hooks/useProviders'
 import { listMembers, listInvitations, inviteMember, removeMember, resendInvitation } from '@/lib/api/workspaces'
 import { updateWorkspace } from '@/lib/api/workspaces'
 import { getQuota } from '@/lib/api/chat'
+import { testDefaultProvider } from '@/lib/api/providers'
 import { adaptMember, adaptInvitation, adaptProviderConfig, backendToProviderKey, providerKeyToBackend } from '@/lib/types/domain'
 import type { ProviderConfig, ProviderKey } from '@/lib/types/domain'
 import type { ApiProviderConfig } from '@/lib/types/api'
+import {
+  DEFAULT_TEMPERATURE,
+  DEFAULT_MAX_TOKENS,
+  EMBEDDING_DIMENSIONS,
+  COPY_FEEDBACK_MS,
+  SAVE_FEEDBACK_MS,
+  USAGE_WARNING_THRESHOLD,
+  queryKeys,
+} from '@/lib/constants'
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-const TABS = [
-  { key: 'ai-provider', label: 'AI Provider' },
-  { key: 'members',     label: 'Members'     },
-  { key: 'workspace',   label: 'Workspace'   },
-  { key: 'usage',       label: 'Usage'       },
+const ALL_TABS = [
+  { key: 'ai-provider', label: 'AI Provider', adminOnly: true  },
+  { key: 'members',     label: 'Members',     adminOnly: false },
+  { key: 'workspace',   label: 'Workspace',   adminOnly: true  },
+  { key: 'usage',       label: 'Usage',       adminOnly: false },
 ] as const
 
-type TabKey = (typeof TABS)[number]['key']
+type TabKey = (typeof ALL_TABS)[number]['key']
 
 interface ProviderDef {
   key: ProviderKey
@@ -45,7 +55,6 @@ interface ProviderDef {
   initial: string
   requiresKey: boolean
   requiresBaseUrl: boolean
-  requiresRegion?: boolean
   keyPlaceholder?: string
   keyDashboardLabel?: string
   baseUrlPlaceholder?: string
@@ -56,13 +65,7 @@ const PROVIDERS: ProviderDef[] = [
   { key: 'openai',          name: 'OpenAI',            description: 'GPT-4o, GPT-4-turbo, o1-preview',      color: 'bg-emerald-500/20', textColor: 'text-emerald-400', initial: 'O',  requiresKey: true,  requiresBaseUrl: false, keyPlaceholder: 'sk-…', keyDashboardLabel: 'platform.openai.com/api-keys' },
   { key: 'anthropic',       name: 'Anthropic',         description: 'Claude 4 Sonnet, Opus, Haiku',         color: 'bg-orange-500/20',  textColor: 'text-orange-400',  initial: 'A',  requiresKey: true,  requiresBaseUrl: false, keyPlaceholder: 'sk-ant-…', keyDashboardLabel: 'console.anthropic.com/keys' },
   { key: 'google-gemini',   name: 'Google Gemini',     description: 'Gemini 2.0 Flash, 1.5 Pro',            color: 'bg-blue-500/20',    textColor: 'text-blue-400',    initial: 'G',  requiresKey: true,  requiresBaseUrl: false, keyPlaceholder: 'AIza…', keyDashboardLabel: 'aistudio.google.com/apikey' },
-  { key: 'azure-openai',    name: 'Azure OpenAI',      description: 'Enterprise OpenAI deployment',         color: 'bg-sky-500/20',     textColor: 'text-sky-400',     initial: 'Az', requiresKey: true,  requiresBaseUrl: true, requiresRegion: true, keyPlaceholder: 'Your Azure API key', keyDashboardLabel: 'portal.azure.com', baseUrlPlaceholder: 'https://your-resource.openai.azure.com' },
-  { key: 'mistral',         name: 'Mistral',           description: 'Mistral Large, Medium, Small',         color: 'bg-amber-500/20',   textColor: 'text-amber-400',   initial: 'M',  requiresKey: true,  requiresBaseUrl: false, keyPlaceholder: '…', keyDashboardLabel: 'console.mistral.ai/api-keys' },
-  { key: 'groq',            name: 'Groq',              description: 'Fast Llama, Mixtral inference',        color: 'bg-rose-500/20',    textColor: 'text-rose-400',    initial: 'G',  requiresKey: true,  requiresBaseUrl: false, keyPlaceholder: 'gsk_…', keyDashboardLabel: 'console.groq.com/keys' },
-  { key: 'ollama',          name: 'Ollama',            description: 'Run any open model on your own infra', color: 'bg-violet-500/20',  textColor: 'text-violet-400',  initial: 'O',  requiresKey: false, requiresBaseUrl: true, baseUrlPlaceholder: 'http://localhost:11434' },
 ]
-
-const AZURE_REGIONS = ['East US', 'East US 2', 'West US', 'West US 2', 'Sweden Central', 'UK South', 'West Europe']
 
 const inputCls = cn(
   'w-full rounded-lg border border-border/60 bg-muted/60 px-3 py-2 text-sm text-foreground',
@@ -70,22 +73,19 @@ const inputCls = cn(
   'focus:ring-2 focus:ring-indigo-500/10 transition-all duration-150'
 )
 
-const selectCls = cn(
-  'w-full rounded-lg border border-border/60 bg-muted/60 px-3 py-2 text-sm text-foreground',
-  'focus:outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10',
-  'transition-all duration-150 cursor-pointer'
-)
-
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
   const { activeWorkspace } = useWorkspace()
+  const isAdmin = activeWorkspace?.role === 'admin'
 
-  // Persist active tab in the URL hash so it survives page refresh
+  const visibleTabs = ALL_TABS.filter((t) => !t.adminOnly || isAdmin)
+  const defaultTab = isAdmin ? 'ai-provider' : 'members'
+
   const getTabFromHash = (): TabKey => {
-    if (typeof window === 'undefined') return 'ai-provider'
+    if (typeof window === 'undefined') return defaultTab
     const hash = window.location.hash.replace('#', '') as TabKey
-    return TABS.some((t) => t.key === hash) ? hash : 'ai-provider'
+    return visibleTabs.some((t) => t.key === hash) ? hash : defaultTab
   }
 
   const [activeTab, setActiveTab] = useState<TabKey>(getTabFromHash)
@@ -105,7 +105,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="flex items-center gap-1 border-b border-border/60 px-6">
-        {TABS.map((tab) => (
+        {visibleTabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => handleTabChange(tab.key)}
@@ -139,6 +139,7 @@ function AIProviderTab() {
   const { data: providerData, isLoading } = useProvider(activeWorkspace?.id)
   const { data: supported = [] } = useSupportedProviders()
   const { mutateAsync: doSave, isPending: isSaving } = useSaveProvider(activeWorkspace?.id)
+  const { mutateAsync: doDelete, isPending: isDeleting } = useDeleteProvider(activeWorkspace?.id)
   const { mutateAsync: doTest } = useTestProvider(activeWorkspace?.id)
 
   const usingDefault  = !providerData || 'using_platform_default' in providerData
@@ -148,11 +149,14 @@ function AIProviderTab() {
 
   const [selectedProvider, setSelectedProvider] = useState<ProviderKey>('askdocs-default')
   const [config, setConfig] = useState<ProviderConfig>({
-    provider: 'askdocs-default', model: '', temperature: 0.7, maxTokens: 2048,
+    provider: 'askdocs-default', model: '', temperature: DEFAULT_TEMPERATURE, maxTokens: DEFAULT_MAX_TOKENS,
   })
   const [testStatus, setTestStatus]   = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [testMessage, setTestMessage] = useState('')
   const [embeddingsOpen, setEmbeddingsOpen] = useState(false)
+
+  const [defaultTestStatus, setDefaultTestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [defaultTestMessage, setDefaultTestMessage] = useState('')
 
   // Seed form from live provider config
   useEffect(() => {
@@ -173,11 +177,38 @@ function AIProviderTab() {
     const sup = supportedMap.get(providerKeyToBackend(key))
     setSelectedProvider(key)
     setConfig({
-      provider: key, apiKey: '', baseUrl: '', region: AZURE_REGIONS[0],
-      model: sup?.default_model ?? '', temperature: 0.7, maxTokens: 2048,
+      provider: key, apiKey: '', baseUrl: '',
+      model: sup?.default_model ?? '', temperature: DEFAULT_TEMPERATURE, maxTokens: DEFAULT_MAX_TOKENS,
     })
     setTestStatus('idle')
     setTestMessage('')
+    setDefaultTestStatus('idle')
+    setDefaultTestMessage('')
+  }
+
+  const handleTestDefault = async () => {
+    if (!activeWorkspace?.id) return
+    setDefaultTestStatus('loading')
+    setDefaultTestMessage('')
+    try {
+      const result = await testDefaultProvider(activeWorkspace.id)
+      if (result.success) {
+        setDefaultTestStatus('success')
+        setDefaultTestMessage(`Connected · ${result.latency_ms}ms`)
+      } else {
+        setDefaultTestStatus('error')
+        setDefaultTestMessage(result.error ?? 'Connection failed')
+      }
+    } catch {
+      setDefaultTestStatus('error')
+      setDefaultTestMessage('Request failed')
+    }
+  }
+
+  const handleSwitchToDefault = async () => {
+    await doDelete()
+    setDefaultTestStatus('idle')
+    setDefaultTestMessage('')
   }
 
   const handleConfigChange = (newConfig: ProviderConfig) => {
@@ -199,7 +230,6 @@ function AIProviderTab() {
         temperature:   config.temperature,
         max_tokens:    config.maxTokens,
         base_url:      config.baseUrl || undefined,
-        azure_region:  config.region  || undefined,
       })
       if (result.success) {
         setTestStatus('success')
@@ -222,7 +252,6 @@ function AIProviderTab() {
       temperature:   config.temperature,
       max_tokens:    config.maxTokens,
       base_url:      config.baseUrl || undefined,
-      azure_region:  config.region  || undefined,
     })
   }
 
@@ -307,11 +336,49 @@ function AIProviderTab() {
           supportedModels={supportedMap.get(providerKeyToBackend(selectedProvider))?.available_models ?? []}
         />
       ) : (
-        <div className="rounded-xl border border-border bg-card/50 px-5 py-4 flex items-center gap-3">
-          <Zap className="h-4 w-4 text-indigo-400 shrink-0" />
-          <p className="text-sm text-muted-foreground">
-            Using AskDocs default · no configuration needed. Powered by Gemini Flash on our infrastructure.
-          </p>
+        <div className="rounded-xl border border-border bg-card/50 px-5 py-4 space-y-4">
+          <div className="flex items-center gap-3">
+            <Zap className="h-4 w-4 text-indigo-400 shrink-0" />
+            <p className="text-sm text-muted-foreground">
+              No API key required. Powered by Gemini Flash on our infrastructure.
+            </p>
+          </div>
+          {!usingDefault && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline" size="sm"
+                  onClick={handleTestDefault}
+                  disabled={defaultTestStatus === 'loading'}
+                  className="gap-2"
+                >
+                  {defaultTestStatus === 'loading' && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  Test connection
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSwitchToDefault}
+                  disabled={isDeleting || defaultTestStatus !== 'success'}
+                  className="gap-2 bg-indigo-600 hover:bg-indigo-500 text-white"
+                  title={defaultTestStatus !== 'success' ? 'Test the connection first' : undefined}
+                >
+                  {isDeleting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  Switch to default
+                </Button>
+
+                {defaultTestStatus === 'success' && (
+                  <span className="flex items-center gap-1.5 text-sm text-emerald-400">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> {defaultTestMessage}
+                  </span>
+                )}
+                {defaultTestStatus === 'error' && (
+                  <span className="flex items-center gap-1.5 text-sm text-red-400">
+                    <XCircle className="h-3.5 w-3.5" /> {defaultTestMessage}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -326,11 +393,17 @@ function AIProviderTab() {
         </button>
         {embeddingsOpen && (
           <div className="border-t border-border px-5 py-5 space-y-4">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2">Embedding Model</p>
-              <p className="font-mono text-sm text-foreground">text-embedding-3-small · 768 dimensions</p>
-              <p className="text-xs text-muted-foreground mt-2 leading-relaxed max-w-lg">
-                Switching embedding models requires re-indexing all documents.
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1">Active Model</p>
+                <p className="font-mono text-sm text-foreground">OpenAI text-embedding-3-small · {EMBEDDING_DIMENSIONS} dims</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1">Alternative</p>
+                <p className="font-mono text-sm text-muted-foreground">Google text-embedding-004 · {EMBEDDING_DIMENSIONS} dims</p>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed max-w-lg">
+                Configured via <span className="font-mono">EMBEDDING_PROVIDER</span> env variable. Changing models requires re-indexing all documents.
               </p>
             </div>
           </div>
@@ -473,7 +546,7 @@ function ConfigForm({
         )}
 
         {def.requiresBaseUrl && (
-          <FormField label="Base URL" required={provider === 'azure-openai' || provider === 'ollama'}>
+          <FormField label="Base URL" required>
             <input
               type="url"
               value={config.baseUrl ?? ''}
@@ -481,18 +554,6 @@ function ConfigForm({
               placeholder={def.baseUrlPlaceholder}
               className={inputCls}
             />
-          </FormField>
-        )}
-
-        {def.requiresRegion && (
-          <FormField label="Region" required>
-            <select
-              value={config.region ?? AZURE_REGIONS[0]}
-              onChange={(e) => onChange({ ...config, region: e.target.value })}
-              className={selectCls}
-            >
-              {AZURE_REGIONS.map((r) => <option key={r}>{r}</option>)}
-            </select>
           </FormField>
         )}
 
@@ -574,18 +635,25 @@ function ConfigForm({
 function WorkspaceTab() {
   const { activeWorkspace } = useWorkspace()
   const queryClient = useQueryClient()
+  const [saved, setSaved] = useState(false)
   const { mutate: doUpdate, isPending } = useMutation({
     mutationFn: (name: string) => updateWorkspace(activeWorkspace!.id, name),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.me() })
+      setSaved(true)
+      setTimeout(() => setSaved(false), SAVE_FEEDBACK_MS)
+    },
   })
   const [name, setName] = useState(activeWorkspace?.name ?? '')
   useEffect(() => { setName(activeWorkspace?.name ?? '') }, [activeWorkspace?.name])
+
+  const hasChanged = name.trim() !== (activeWorkspace?.name ?? '') && name.trim().length > 0
 
   return (
     <div className="max-w-xl mx-auto px-6 py-8 space-y-8">
       <Section title="Workspace" description="Basic workspace identity and preferences.">
         <FormField label="Workspace name">
-          <input value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
+          <input value={name} onChange={(e) => { setName(e.target.value); setSaved(false) }} className={inputCls} />
         </FormField>
         <FormField label="Workspace slug" hint="Used in URLs and API references. Cannot be changed.">
           <input
@@ -593,9 +661,17 @@ function WorkspaceTab() {
             className={cn(inputCls, 'font-mono text-muted-foreground bg-muted/40 cursor-not-allowed')}
           />
         </FormField>
-        <Button size="sm" disabled={isPending} onClick={() => doUpdate(name)}>
-          {isPending ? 'Saving…' : 'Save changes'}
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button size="sm" disabled={!hasChanged || isPending} onClick={() => doUpdate(name.trim())}>
+            {isPending ? 'Saving…' : 'Save changes'}
+          </Button>
+          {saved && (
+            <span className="flex items-center gap-1.5 text-sm text-emerald-400">
+              <CheckCircle2 className="h-4 w-4" />
+              Workspace updated
+            </span>
+          )}
+        </div>
       </Section>
     </div>
   )
@@ -610,16 +686,18 @@ function MembersTab() {
   const [showInvite, setShowInvite]   = useState(false)
 
   const { data: rawMembers = [], isLoading } = useQuery({
-    queryKey: ['members', activeWorkspace?.id],
+    queryKey: queryKeys.members(activeWorkspace?.id),
     queryFn:  () => listMembers(activeWorkspace!.id),
     enabled:  !!activeWorkspace,
     staleTime: 0,
     refetchInterval: 10_000,
   })
+  const isAdmin = activeWorkspace?.role === 'admin'
+
   const { data: rawInvites = [] } = useQuery({
-    queryKey: ['invitations', activeWorkspace?.id],
+    queryKey: queryKeys.invitations(activeWorkspace?.id),
     queryFn:  () => listInvitations(activeWorkspace!.id),
-    enabled:  !!activeWorkspace,
+    enabled:  !!activeWorkspace && isAdmin,
     staleTime: 0,
     refetchInterval: 5_000,
   })
@@ -629,12 +707,12 @@ function MembersTab() {
 
   const { mutate: doRemove } = useMutation({
     mutationFn: (userId: string) => removeMember(activeWorkspace!.id, userId),
-    onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['members', activeWorkspace?.id] }),
+    onSuccess:  () => queryClient.invalidateQueries({ queryKey: queryKeys.members(activeWorkspace?.id) }),
   })
   const { mutate: doInvite, isPending: isInviting } = useMutation({
     mutationFn: () => inviteMember(activeWorkspace!.id, inviteEmail, 'member'),
     onSuccess:  () => {
-      queryClient.invalidateQueries({ queryKey: ['invitations', activeWorkspace?.id] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.invitations(activeWorkspace?.id) })
       setInviteEmail('')
       setShowInvite(false)
     },
@@ -655,10 +733,12 @@ function MembersTab() {
           <p className="text-sm font-medium text-foreground">{members.length} members</p>
           <p className="text-xs text-muted-foreground mt-0.5">{activeWorkspace?.name}</p>
         </div>
-        <Button size="sm" className="gap-2" onClick={() => setShowInvite(true)}>
-          <UserPlus className="h-3.5 w-3.5" />
-          Invite member
-        </Button>
+        {isAdmin && (
+          <Button size="sm" className="gap-2" onClick={() => setShowInvite(true)}>
+            <UserPlus className="h-3.5 w-3.5" />
+            Invite member
+          </Button>
+        )}
       </div>
 
       {/* Invite form */}
@@ -713,22 +793,23 @@ function MembersTab() {
             <span className="text-xs text-muted-foreground">
               {m.joinedAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })}
             </span>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="opacity-0 group-hover:opacity-100 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted transition-all">
-                  <MoreHorizontal className="h-4 w-4" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-rose-400 focus:text-rose-300 focus:bg-rose-500/10"
-                  onClick={() => doRemove(m.id)}
-                >
-                  Remove
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {isAdmin && m.role !== 'admin' && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="opacity-0 group-hover:opacity-100 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted transition-all">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40">
+                  <DropdownMenuItem
+                    className="text-rose-400 focus:text-rose-300 focus:bg-rose-500/10"
+                    onClick={() => doRemove(m.id)}
+                  >
+                    Remove
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         ))}
       </div>
@@ -777,10 +858,13 @@ function MembersTab() {
 
 function UsageTab() {
   const { activeWorkspace } = useWorkspace()
+  const isAdmin = activeWorkspace?.role === 'admin'
   const { data: quota, isLoading } = useQuery({
-    queryKey: ['quota', activeWorkspace?.id],
+    queryKey: queryKeys.quota(activeWorkspace?.id),
     queryFn:  () => getQuota(activeWorkspace!.id),
     enabled:  !!activeWorkspace,
+    staleTime: 0,
+    refetchInterval: 15_000,
   })
 
   if (isLoading || !quota) {
@@ -795,26 +879,93 @@ function UsageTab() {
   const limit     = quota.user_messages_limit
   const remaining = Math.max(0, limit - used)
   const queryPct  = limit > 0 ? (used / limit) * 100 : 0
+  const wsUsage   = quota.workspace_usage
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-8 space-y-8">
-      <div className="grid grid-cols-3 gap-4">
-        <StatCard
-          label="Messages used"
-          value={used.toLocaleString()}
-          sub={`of ${limit.toLocaleString()} daily limit`}
-          pct={queryPct}
-        />
-        <StatCard
-          label="Remaining today"
-          value={remaining.toLocaleString()}
-        />
-        <StatCard
-          label="Usage"
-          value={`${Math.round(queryPct)}%`}
-          pct={queryPct}
-        />
+      <div>
+        <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-3">Your usage today</p>
+        <div className="grid grid-cols-3 gap-4">
+          <StatCard
+            label="Messages used"
+            value={used.toLocaleString()}
+            sub={`of ${limit.toLocaleString()} daily limit`}
+            pct={queryPct}
+          />
+          <StatCard
+            label="Remaining today"
+            value={remaining.toLocaleString()}
+          />
+          <StatCard
+            label="Usage"
+            value={`${Math.round(queryPct)}%`}
+            pct={queryPct}
+          />
+        </div>
       </div>
+
+      {isAdmin && wsUsage && (
+        <>
+          <div>
+            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-3">Workspace total today</p>
+            <div className="grid grid-cols-3 gap-4">
+              <StatCard
+                label="Total messages"
+                value={wsUsage.total_messages.toLocaleString()}
+                sub="all members combined"
+              />
+              <StatCard
+                label="Active members"
+                value={wsUsage.members.length.toLocaleString()}
+                sub="sent messages today"
+              />
+              <StatCard
+                label="Avg per member"
+                value={wsUsage.members.length > 0 ? Math.round(wsUsage.total_messages / wsUsage.members.length).toLocaleString() : '0'}
+                sub="messages today"
+              />
+            </div>
+          </div>
+
+          {wsUsage.members.length > 0 && (
+            <div>
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-3">Per-member breakdown</p>
+              <div className="rounded-xl border border-border overflow-hidden">
+                <div
+                  className="grid items-center gap-4 px-4 py-2.5 bg-card/60 border-b border-border"
+                  style={{ gridTemplateColumns: '1fr 1fr 100px 80px' }}
+                >
+                  {['Member', 'Email', 'Messages', '% of total'].map((col, i) => (
+                    <span key={i} className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                      {col}
+                    </span>
+                  ))}
+                </div>
+                {wsUsage.members
+                  .sort((a, b) => b.message_count - a.message_count)
+                  .map((m, i) => {
+                    const displayName = `${m.first_name} ${m.last_name}`.trim() || m.email
+                    const memberPct = wsUsage.total_messages > 0
+                      ? Math.round((m.message_count / wsUsage.total_messages) * 100)
+                      : 0
+                    return (
+                      <div
+                        key={m.user_id}
+                        className={cn('grid items-center gap-4 px-4 py-3', i < wsUsage.members.length - 1 && 'border-b border-border/50')}
+                        style={{ gridTemplateColumns: '1fr 1fr 100px 80px' }}
+                      >
+                        <span className="text-sm text-foreground truncate">{displayName}</span>
+                        <span className="font-mono text-xs text-muted-foreground truncate">{m.email}</span>
+                        <span className="text-sm text-foreground tabular-nums">{m.message_count.toLocaleString()}</span>
+                        <span className="text-sm text-muted-foreground tabular-nums">{memberPct}%</span>
+                      </div>
+                    )
+                  })}
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 }
@@ -866,7 +1017,7 @@ function ResendButton({ workspaceId, invitationId }: { workspaceId: string; invi
   const queryClient = useQueryClient()
   const { mutate, isPending, isSuccess } = useMutation({
     mutationFn: () => resendInvitation(workspaceId, invitationId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['invitations', workspaceId] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.invitations(workspaceId) }),
   })
 
   return (
@@ -897,7 +1048,7 @@ function CopyLinkButton({ token }: { token: string }) {
     const url = `${window.location.origin}/invite/${token}`
     await navigator.clipboard.writeText(url)
     setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    setTimeout(() => setCopied(false), COPY_FEEDBACK_MS)
   }
 
   return (
@@ -922,7 +1073,7 @@ function StatCard({ label, value, sub, pct }: { label: string; value: string; su
       {pct !== undefined && (
         <div className="mt-3 h-1 w-full rounded-full bg-muted overflow-hidden">
           <div
-            className={cn('h-full rounded-full transition-all', pct > 85 ? 'bg-rose-500' : 'bg-indigo-500')}
+            className={cn('h-full rounded-full transition-all', pct > USAGE_WARNING_THRESHOLD ? 'bg-rose-500' : 'bg-indigo-500')}
             style={{ width: `${Math.min(100, pct)}%` }}
           />
         </div>

@@ -1,3 +1,5 @@
+"""Custom user model and manager for email-based authentication."""
+
 import uuid
 from typing import Any
 
@@ -12,6 +14,7 @@ class UserManager(BaseUserManager["User"]):
         password: str | None = None,
         **extra_fields: Any,
     ) -> "User":
+        """Create and save a regular user with normalized email and hashed password."""
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
@@ -24,12 +27,15 @@ class UserManager(BaseUserManager["User"]):
         password: str | None = None,
         **extra_fields: Any,
     ) -> "User":
+        """Create and save a staff superuser."""
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         return self.create_user(email, password, **extra_fields)
 
 
 class User(AbstractBaseUser, PermissionsMixin):
+    """Application user identified by email."""
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=150, blank=True)

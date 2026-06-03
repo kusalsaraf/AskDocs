@@ -1,3 +1,5 @@
+"""Cache identical RAG chat responses keyed by workspace, chunks, and query."""
+
 from __future__ import annotations
 
 import hashlib
@@ -7,6 +9,7 @@ from uuid import UUID
 
 from django.core.cache import cache
 
+from apps.core.constants import DAILY_CACHE_TTL_SECONDS
 from apps.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -14,6 +17,8 @@ logger = get_logger(__name__)
 
 @dataclass
 class CachedResponse:
+    """Stored assistant reply and metadata for a cache hit."""
+
     full_text: str
     citations: dict[int, str]
     provider_name: str
@@ -27,6 +32,7 @@ def _normalize_query(query: str) -> str:
 
 
 def cache_key_for_query(workspace_id: UUID, chunk_ids: list[UUID], query: str) -> str:
+    """Build a stable cache key from workspace, retrieved chunk IDs, and normalized query."""
     normalized = _normalize_query(query)
     sorted_ids = sorted(str(cid) for cid in chunk_ids)
     combined = f"{workspace_id}:{':'.join(sorted_ids)}:{normalized}"
@@ -35,6 +41,7 @@ def cache_key_for_query(workspace_id: UUID, chunk_ids: list[UUID], query: str) -
 
 
 def get_cached_response(key: str) -> CachedResponse | None:
+    """Return a cached response for the key, or None on miss."""
     data = cache.get(key)
     if data is None:
         return None
@@ -42,7 +49,10 @@ def get_cached_response(key: str) -> CachedResponse | None:
     return CachedResponse(**data)
 
 
-def cache_response(key: str, response: CachedResponse, ttl_seconds: int = 86400) -> None:
+def cache_response(
+    key: str, response: CachedResponse, ttl_seconds: int = DAILY_CACHE_TTL_SECONDS
+) -> None:
+    """Store a completed assistant response under the given key."""
     cache.set(
         key,
         {

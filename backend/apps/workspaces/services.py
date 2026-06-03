@@ -1,3 +1,5 @@
+"""Business logic for workspace lifecycle, membership, and invitations."""
+
 import logging
 import random
 import string
@@ -8,6 +10,7 @@ from django.db import IntegrityError
 from django.utils import timezone
 from django.utils.text import slugify
 
+from apps.core.constants import INVITATION_EXPIRY_HOURS
 from apps.core.exceptions import (
     CannotDeletePersonalWorkspace,
     CannotRemoveSoleAdmin,
@@ -41,6 +44,7 @@ def _create_workspace_with_slug(name: str, **kwargs: Any) -> "Workspace":
 
 
 def create_personal_workspace(user: Any) -> "Workspace":
+    """Create the default personal workspace and admin membership for a new user."""
     from apps.workspaces.models import Membership
 
     name = (
@@ -55,6 +59,7 @@ def create_personal_workspace(user: Any) -> "Workspace":
 
 
 def create_workspace(name: str, user: Any) -> "Workspace":
+    """Create a shared team workspace with the creator as admin."""
     from apps.workspaces.models import Membership
 
     workspace = _create_workspace_with_slug(name, created_by=user, is_personal=False)
@@ -68,6 +73,7 @@ def update_workspace(
     name: str | None = None,
     avatar_url: str | None = None,
 ) -> "Workspace":
+    """Update workspace display fields and return the saved instance."""
     if name is not None:
         workspace.name = name
     if avatar_url is not None:
@@ -77,6 +83,7 @@ def update_workspace(
 
 
 def delete_workspace(workspace: Any) -> None:
+    """Delete a team workspace; raises if the workspace is personal."""
     if workspace.is_personal:
         raise CannotDeletePersonalWorkspace()
     workspace.delete()
@@ -88,6 +95,7 @@ def change_member_role(
     new_role: str,
     acting_user: Any,
 ) -> "Membership":
+    """Change a member's role, preventing removal of the sole admin."""
     from apps.workspaces.models import Membership
 
     membership = Membership.objects.get(workspace=workspace, user=target_user)
@@ -103,6 +111,7 @@ def change_member_role(
 
 
 def remove_member(workspace: Any, target_user: Any) -> None:
+    """Remove a member from the workspace, preserving at least one admin."""
     from apps.workspaces.models import Membership
 
     membership = Membership.objects.get(workspace=workspace, user=target_user)
@@ -120,7 +129,8 @@ def create_invitation(
     email: str,
     role: str,
     invited_by: Any,
-) -> "WorkspaceInvitation":
+) -> tuple["WorkspaceInvitation", bool]:
+    """Create or refresh an invitation and send the acceptance email."""
     from django.conf import settings
 
     from apps.core.email import send_invitation_email
@@ -135,26 +145,34 @@ def create_invitation(
         defaults={"role": role, "invited_by": invited_by},
     )
 
-    if created:
-        inviter_name = getattr(invited_by, "display_name", None) or invited_by.email
-        accept_url = (
-            f"{settings.FRONTEND_URL}/invite/{invitation.token}"
-            f"?workspace={workspace.name}&inviter={inviter_name}&email={email}"
-        )
-        send_invitation_email(
-            to=email,
-            workspace_name=workspace.name,
-            inviter_name=inviter_name,
-            accept_url=accept_url,
-        )
+    if not created:
+        if invitation.accepted_at is not None:
+            raise InvitationAlreadyAccepted()
+        invitation.role = role
+        invitation.invited_by = invited_by
+        invitation.invited_at = timezone.now()
+        invitation.save(update_fields=["role", "invited_by", "invited_at"])
 
-    return invitation
+    inviter_name = getattr(invited_by, "display_name", None) or invited_by.email
+    accept_url = (
+        f"{settings.FRONTEND_URL}/invite/{invitation.token}"
+        f"?workspace={workspace.name}&inviter={inviter_name}&email={email}"
+    )
+    send_invitation_email(
+        to=email,
+        workspace_name=workspace.name,
+        inviter_name=inviter_name,
+        accept_url=accept_url,
+    )
+
+    return invitation, created
 
 
 def accept_invitation(token: UUID, user: Any) -> "Membership":
+    """Accept a valid invitation and create workspace membership."""
     from datetime import timedelta
 
-    from apps.core.exceptions import InvitationExpired
+    from apps.core.exceptions import InvitationExpired, PermissionDenied
     from apps.workspaces.models import Membership, WorkspaceInvitation
 
     try:
@@ -167,16 +185,23 @@ def accept_invitation(token: UUID, user: Any) -> "Membership":
     if invitation.accepted_at is not None:
         raise InvitationAlreadyAccepted()
 
-    # Invitations expire after 24 hours
-    if timezone.now() > invitation.invited_at + timedelta(hours=24):
+    # Invitations expire after INVITATION_EXPIRY_HOURS
+    if timezone.now() > invitation.invited_at + timedelta(hours=INVITATION_EXPIRY_HOURS):
         raise InvitationExpired()
 
-    # If the accepting user is already a member, return their membership without
-    # consuming the invitation — prevents the wrong person accidentally eating it.
+    if user.email.lower() != invitation.email.lower():
+        raise PermissionDenied(
+            detail="This invitation was sent to a different email address.",
+            code="invitation_email_mismatch",
+        )
+
     existing = Membership.objects.filter(
         workspace=invitation.workspace, user=user
     ).first()
     if existing:
+        if user.email.lower() == invitation.email.lower():
+            invitation.accepted_at = timezone.now()
+            invitation.save(update_fields=["accepted_at"])
         raise InvitationAlreadyAccepted()
 
     invitation.accepted_at = timezone.now()
@@ -194,6 +219,7 @@ def accept_invitation(token: UUID, user: Any) -> "Membership":
 
 
 def resend_invitation(invitation_id: UUID, workspace: Any, acting_user: Any) -> None:
+    """Resend a pending invitation email and reset the 24-hour expiry window."""
     from django.conf import settings
 
     from apps.core.email import send_invitation_email

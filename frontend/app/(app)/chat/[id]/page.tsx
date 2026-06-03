@@ -13,6 +13,7 @@ import { useConversation, useUpdateTitle, useMessageSources } from '@/lib/hooks/
 import { useDocuments } from '@/lib/hooks/useDocuments'
 import { sendMessageStream } from '@/lib/api/chat'
 import type { Message, Citation } from '@/lib/types/domain'
+import { ERROR_CODES, queryKeys, DEFAULT_CONVERSATION_TITLE } from '@/lib/constants'
 
 export default function ConversationPage() {
   const params       = useParams<{ id: string }>()
@@ -35,32 +36,32 @@ export default function ConversationPage() {
   const [activeCitationIndex, setActiveCitationIndex] = useState<number | null>(null)
   const [isStreaming, setIsStreaming]                  = useState(false)
 
+  const [initDone, setInitDone] = useState(false)
+
   const bottomRef     = useRef<HTMLDivElement>(null)
   const titleInputRef = useRef<HTMLInputElement>(null)
   const hasAutoSent   = useRef(false)
-  const initDone      = useRef(false)
 
   // Sync from query data on first successful load
   useEffect(() => {
-    if (conversation && !initDone.current) {
-      initDone.current = true
+    if (conversation && !initDone) {
+      setInitDone(true)
       setLocalMessages(conversation.messages)
       setTitle(conversation.title)
       setTitleDraft(conversation.title)
     }
-  }, [conversation])
+  }, [conversation, initDone])
 
   // Auto-send first message from ?q= param (set by chat/page.tsx)
-  // Clear the param immediately to prevent re-send on page reload
   useEffect(() => {
     const q = searchParams.get('q')
-    if (q && !hasAutoSent.current && initDone.current) {
+    if (q && !hasAutoSent.current && initDone) {
       hasAutoSent.current = true
       router.replace(`/chat/${params.id}`)
       sendMessage(q)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initDone.current])
+  }, [initDone])
 
   useEffect(() => {
     if (editingTitle) titleInputRef.current?.focus()
@@ -140,7 +141,7 @@ export default function ConversationPage() {
                   : m
               )
             )
-            queryClient.invalidateQueries({ queryKey: ['conversations', activeWorkspace.id] })
+            queryClient.invalidateQueries({ queryKey: queryKeys.conversations(activeWorkspace.id) })
           } else if (event.type === 'error') {
             setLocalMessages((prev) =>
               prev.map((m) =>
@@ -151,11 +152,14 @@ export default function ConversationPage() {
             )
           }
         }
-      } catch {
+      } catch (err) {
+        const errorMessage = err instanceof Error && err.message === ERROR_CODES.RATE_LIMIT
+          ? 'You\'ve reached your daily message limit. Please try again tomorrow.'
+          : 'Connection failed. Please try again.'
         setLocalMessages((prev) =>
           prev.map((m) =>
             m.id === tempAiId
-              ? { ...m, isStreaming: false, streamError: 'Connection failed. Please try again.' }
+              ? { ...m, isStreaming: false, streamError: errorMessage }
               : m
           )
         )
@@ -235,7 +239,7 @@ export default function ConversationPage() {
                 className="group flex items-center gap-2 min-w-0"
               >
                 <span className="truncate text-sm font-medium text-foreground max-w-[400px]">
-                  {title || 'New conversation'}
+                  {title || DEFAULT_CONVERSATION_TITLE}
                 </span>
                 <Pencil className="h-3 w-3 text-muted-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
               </button>
@@ -246,7 +250,7 @@ export default function ConversationPage() {
 
         {/* Messages */}
         <ScrollArea className="flex-1">
-          <div className="py-6 space-y-6 max-w-3xl mx-auto w-full">
+          <div className="py-6 px-6 space-y-6 max-w-4xl mx-auto w-full">
             {localMessages.map((message) => (
               <ChatMessage
                 key={message.id}

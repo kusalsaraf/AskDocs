@@ -6,8 +6,9 @@ import { useAuth } from '@/lib/hooks/useAuth'
 import { adaptWorkspace } from '@/lib/types/domain'
 import type { Workspace } from '@/lib/types/domain'
 import type { ApiWorkspace } from '@/lib/types/api'
+import { STORAGE_KEYS } from '@/lib/constants'
 
-const STORAGE_KEY = 'askdocs_active_workspace'
+const STORAGE_KEY = STORAGE_KEYS.ACTIVE_WORKSPACE
 
 interface WorkspaceContextValue {
   activeWorkspace: Workspace | null
@@ -42,6 +43,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       setActiveWorkspaceState(ws)
       queryClient.removeQueries({ queryKey: ['documents'] })
       queryClient.removeQueries({ queryKey: ['conversations'] })
+      queryClient.removeQueries({ queryKey: ['members'] })
+      queryClient.removeQueries({ queryKey: ['invitations'] })
     },
     [queryClient]
   )

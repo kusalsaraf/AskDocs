@@ -85,8 +85,15 @@ class InvitationAlreadyAccepted(AskDocsError):
 
 
 def custom_exception_handler(exc: Exception, context: dict[str, Any]) -> Response | None:
+    """Handle ``AskDocsError`` subclasses with structured JSON responses.
+
+    Uses WARNING for client errors (4xx) and ERROR for server errors (5xx)
+    to avoid alert fatigue from expected user-facing failures.
+    """
     if isinstance(exc, AskDocsError):
-        logger.error(
+        log_level = logging.WARNING if exc.status_code < 500 else logging.ERROR
+        logger.log(
+            log_level,
             "Application error: %s",
             exc.detail,
             extra={"code": exc.code, "status_code": exc.status_code},

@@ -143,18 +143,21 @@ def test_invitation_sends_email(admin_client: APIClient, workspace_with_member: 
     assert call_kwargs.kwargs.get("to") == "newperson@example.com" or call_kwargs.args[0] == "newperson@example.com"
 
 
-def test_duplicate_invitation_does_not_resend_email(
+def test_duplicate_invitation_resends_email(
     admin_client: APIClient, workspace_with_member: Workspace
 ) -> None:
+    """Duplicate invitations now resend email and return 200 instead of 201."""
     with patch("apps.core.email.send_invitation_email") as mock_send:
-        admin_client.post(
+        resp1 = admin_client.post(
             f"/api/v1/workspaces/{workspace_with_member.id}/invitations/",
             {"email": "dup@example.com", "role": "member"},
             format="json",
         )
-        admin_client.post(
+        resp2 = admin_client.post(
             f"/api/v1/workspaces/{workspace_with_member.id}/invitations/",
             {"email": "dup@example.com", "role": "member"},
             format="json",
         )
-    assert mock_send.call_count == 1
+    assert resp1.status_code == 201
+    assert resp2.status_code == 200
+    assert mock_send.call_count == 2

@@ -1,15 +1,19 @@
+"""Split parsed document elements into token-bounded chunks for embedding."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 
+from apps.core.constants import (
+    CHUNK_MAX_TOKENS,
+    CHUNK_OVERLAP_TOKENS,
+    TABLE_MAX_TOKENS,
+    TIKTOKEN_ENCODING,
+)
 from apps.core.logging import get_logger
 from apps.documents.parsing.base import ParsedElement
 
 logger = get_logger(__name__)
-
-_CHUNK_MAX_TOKENS = 512
-_CHUNK_OVERLAP_TOKENS = 50
-_TABLE_MAX_TOKENS = 2000  # tables larger than this get split; all sub-chunks keep type "Table"
 
 _BOUNDARY_TYPES = {"Title", "Header"}
 _TABLE_TYPE = "Table"
@@ -27,7 +31,7 @@ def chunk_elements(elements: list[ParsedElement]) -> list[Chunk]:
     """Convert ParsedElements to Chunks respecting semantic boundaries.
 
     Rules:
-    - Tables are kept whole (up to _TABLE_MAX_TOKENS); oversized tables are token-split.
+    - Tables are kept whole (up to TABLE_MAX_TOKENS); oversized tables are token-split.
     - Title / Header elements flush pending prose and start a new semantic boundary.
     - NarrativeText and other prose types are concatenated and token-split at 512 tokens
       with 50-token overlap.
@@ -36,7 +40,7 @@ def chunk_elements(elements: list[ParsedElement]) -> list[Chunk]:
         return []
 
     import tiktoken
-    enc = tiktoken.get_encoding("cl100k_base")
+    enc = tiktoken.get_encoding(TIKTOKEN_ENCODING)
 
     chunks: list[Chunk] = []
     pending_texts: list[str] = []
@@ -64,7 +68,7 @@ def chunk_elements(elements: list[ParsedElement]) -> list[Chunk]:
         if etype == _TABLE_TYPE:
             flush()
             tokens = enc.encode(element.content)
-            if len(tokens) <= _TABLE_MAX_TOKENS:
+            if len(tokens) <= TABLE_MAX_TOKENS:
                 chunks.append(
                     Chunk(
                         content=element.content,
@@ -107,7 +111,7 @@ def _split_by_tokens(
 
     start = 0
     while start < len(tokens):
-        end = min(start + _CHUNK_MAX_TOKENS, len(tokens))
+        end = min(start + CHUNK_MAX_TOKENS, len(tokens))
         chunk_tokens = tokens[start:end]
         chunk_text = enc.decode(chunk_tokens).strip()
         if chunk_text:
@@ -116,4 +120,4 @@ def _split_by_tokens(
             )
         if end >= len(tokens):
             break
-        start = end - _CHUNK_OVERLAP_TOKENS
+        start = end - CHUNK_OVERLAP_TOKENS

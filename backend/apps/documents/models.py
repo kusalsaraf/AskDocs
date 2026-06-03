@@ -1,3 +1,5 @@
+"""Uploaded documents and vector-indexed chunks for RAG retrieval."""
+
 from __future__ import annotations
 
 import uuid
@@ -9,6 +11,8 @@ from apps.core.models import BaseModel
 
 
 class Document(BaseModel):
+    """A file uploaded to a workspace with ingestion status."""
+
     class Status(models.TextChoices):
         PENDING = "pending", "Pending"
         PROCESSING = "processing", "Processing"
@@ -55,6 +59,8 @@ class Document(BaseModel):
 
 
 class DocumentChunk(models.Model):
+    """Text segment with embedding for semantic search within a workspace."""
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     document = models.ForeignKey(
         Document,

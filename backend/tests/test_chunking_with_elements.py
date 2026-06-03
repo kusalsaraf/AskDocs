@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import pytest
 
+tiktoken = pytest.importorskip("tiktoken", reason="tiktoken not installed (Docker-only dep)")
+
 from apps.documents.chunking import Chunk, chunk_elements
 from apps.documents.parsing.base import ParsedElement
 

@@ -1,5 +1,7 @@
-const ACCESS_KEY  = 'askdocs_access_token'
-const REFRESH_KEY = 'askdocs_refresh_token'
+import { STORAGE_KEYS } from '@/lib/constants'
+
+const ACCESS_KEY  = STORAGE_KEYS.ACCESS_TOKEN
+const REFRESH_KEY = STORAGE_KEYS.REFRESH_TOKEN
 
 export function getAccessToken(): string | null {
   if (typeof window === 'undefined') return null

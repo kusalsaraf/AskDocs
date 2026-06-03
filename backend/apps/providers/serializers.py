@@ -1,3 +1,5 @@
+"""Serializers for reading and writing workspace LLM provider configuration."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -12,6 +14,8 @@ _PROVIDERS_REQUIRING_REGION = {"azure"}
 
 
 class ProviderConfigSerializer(serializers.ModelSerializer[ProviderConfig]):
+    """Safe read-only view of provider config with masked API key."""
+
     api_key_masked = serializers.SerializerMethodField()
     is_default = serializers.SerializerMethodField()
 
@@ -48,7 +52,7 @@ class ProviderConfigSerializer(serializers.ModelSerializer[ProviderConfig]):
 class ProviderDefaultResponseSerializer(serializers.Serializer[Any]):
     """Returned when the workspace has no ProviderConfig (falls back to platform default)."""
 
-    is_default = serializers.BooleanField(default=True)
+    using_platform_default = serializers.BooleanField(default=True)
     provider_name = serializers.CharField(default="gemini")
     model_name = serializers.CharField(default="gemini-1.5-flash")
     description = serializers.CharField(
@@ -60,6 +64,8 @@ class ProviderDefaultResponseSerializer(serializers.Serializer[Any]):
 
 
 class ProviderConfigWriteSerializer(serializers.Serializer[ProviderConfig]):
+    """Create or update provider config with provider-specific validation."""
+
     provider_name = serializers.ChoiceField(choices=ProviderConfig.Provider.choices)
     api_key = serializers.CharField(write_only=True, required=False, allow_blank=True, default="")
     base_url = serializers.URLField(required=False, allow_null=True, default=None)
@@ -67,6 +73,25 @@ class ProviderConfigWriteSerializer(serializers.Serializer[ProviderConfig]):
     model_name = serializers.CharField(max_length=255)
     temperature = serializers.FloatField(default=0.7)
     max_tokens = serializers.IntegerField(default=2048, min_value=1)
+
+    def validate_base_url(self, value):
+        if not value:
+            return value
+        from urllib.parse import urlparse
+        import ipaddress
+        parsed = urlparse(value)
+        hostname = parsed.hostname
+        if not hostname:
+            raise serializers.ValidationError("Invalid URL.")
+        try:
+            ip = ipaddress.ip_address(hostname)
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+                raise serializers.ValidationError("URLs pointing to private/internal networks are not allowed.")
+        except ValueError:
+            blocked_hosts = {"localhost", "127.0.0.1", "0.0.0.0", "metadata.google.internal"}
+            if hostname.lower() in blocked_hosts:
+                raise serializers.ValidationError("URLs pointing to private/internal networks are not allowed.")
+        return value
 
     def validate(self, data: dict[str, Any]) -> dict[str, Any]:
         provider = data["provider_name"]

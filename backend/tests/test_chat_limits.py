@@ -13,8 +13,7 @@ from apps.chat.limits import (
     check_and_increment_global_budget,
     check_and_increment_user_limit,
     get_remaining_global_budget,
-    get_remaining_user_quota,
-    get_user_messages_used_today,
+    get_user_workspace_usage_today,
 )
 
 
@@ -29,58 +28,62 @@ def _clear(db: Any) -> Any:
 
 def test_user_limit_allows_up_to_limit() -> None:
     user_id = uuid4()
+    ws_id = uuid4()
     with patch("apps.chat.limits.settings") as s:
         s.USER_DAILY_MESSAGE_LIMIT = 3
         s.GLOBAL_DAILY_PLATFORM_LLM_BUDGET = 5000
         for _ in range(3):
-            check_and_increment_user_limit(user_id)
-        assert get_user_messages_used_today(user_id) == 3
+            check_and_increment_user_limit(user_id, ws_id)
+        assert get_user_workspace_usage_today(user_id, ws_id) == 3
 
 
 def test_user_limit_raises_on_exceed() -> None:
     user_id = uuid4()
+    ws_id = uuid4()
     with patch("apps.chat.limits.settings") as s:
         s.USER_DAILY_MESSAGE_LIMIT = 2
         s.GLOBAL_DAILY_PLATFORM_LLM_BUDGET = 5000
-        check_and_increment_user_limit(user_id)
-        check_and_increment_user_limit(user_id)
+        check_and_increment_user_limit(user_id, ws_id)
+        check_and_increment_user_limit(user_id, ws_id)
         with pytest.raises(RateLimitExceeded):
-            check_and_increment_user_limit(user_id)
+            check_and_increment_user_limit(user_id, ws_id)
 
 
 def test_user_limit_100_messages() -> None:
     user_id = uuid4()
+    ws_id = uuid4()
     with patch("apps.chat.limits.settings") as s:
         s.USER_DAILY_MESSAGE_LIMIT = 100
         s.GLOBAL_DAILY_PLATFORM_LLM_BUDGET = 5000
         for _ in range(100):
-            check_and_increment_user_limit(user_id)
+            check_and_increment_user_limit(user_id, ws_id)
         with pytest.raises(RateLimitExceeded):
-            check_and_increment_user_limit(user_id)
+            check_and_increment_user_limit(user_id, ws_id)
 
 
 def test_remaining_quota_decreases() -> None:
     user_id = uuid4()
+    ws_id = uuid4()
     with patch("apps.chat.limits.settings") as s:
         s.USER_DAILY_MESSAGE_LIMIT = 10
         s.GLOBAL_DAILY_PLATFORM_LLM_BUDGET = 5000
-        assert get_remaining_user_quota(user_id) == 10
-        check_and_increment_user_limit(user_id)
-        assert get_remaining_user_quota(user_id) == 9
+        assert get_user_workspace_usage_today(user_id, ws_id) == 0
+        check_and_increment_user_limit(user_id, ws_id)
+        assert get_user_workspace_usage_today(user_id, ws_id) == 1
 
 
 def test_different_users_have_independent_limits() -> None:
     user_a = uuid4()
     user_b = uuid4()
+    ws_id = uuid4()
     with patch("apps.chat.limits.settings") as s:
         s.USER_DAILY_MESSAGE_LIMIT = 2
         s.GLOBAL_DAILY_PLATFORM_LLM_BUDGET = 5000
-        check_and_increment_user_limit(user_a)
-        check_and_increment_user_limit(user_a)
-        # user_a is at limit; user_b should still work
+        check_and_increment_user_limit(user_a, ws_id)
+        check_and_increment_user_limit(user_a, ws_id)
         with pytest.raises(RateLimitExceeded):
-            check_and_increment_user_limit(user_a)
-        check_and_increment_user_limit(user_b)  # should not raise
+            check_and_increment_user_limit(user_a, ws_id)
+        check_and_increment_user_limit(user_b, ws_id)  # should not raise
 
 
 # ── Global budget ─────────────────────────────────────────────────────────────
@@ -112,7 +115,6 @@ def test_byok_workspace_not_subject_to_global_budget(workspace: Any, user: Any) 
     from apps.providers.llm.base import StreamChunk
     from apps.providers.models import ProviderConfig
 
-    # Add BYOK config — workspace is NOT platform default
     ProviderConfig.objects.create(
         workspace=workspace,
         provider_name="openai",
@@ -143,11 +145,9 @@ def test_byok_workspace_not_subject_to_global_budget(workspace: Any, user: Any) 
 
     mock_stream = [StreamChunk(delta="ok"), StreamChunk(delta="", finish_reason="stop")]
 
-    # Exhaust the global budget
     with patch("apps.chat.limits.settings") as s:
         s.USER_DAILY_MESSAGE_LIMIT = 100
         s.GLOBAL_DAILY_PLATFORM_LLM_BUDGET = 0
-        # Even with budget at 0, BYOK workspace should succeed
         with patch("apps.chat.services.retrieve_chunks_for_query", return_value=[chunk]), \
              patch("apps.chat.services.get_active_provider") as mock_provider_fn, \
              patch("apps.chat.services.check_and_increment_user_limit"):
@@ -161,6 +161,4 @@ def test_byok_workspace_not_subject_to_global_budget(workspace: Any, user: Any) 
 
             resp = client.post(url, {"content": "Hello"}, format="json")
 
-    # The BYOK path never calls check_and_increment_global_budget
-    # so it should reach the provider even if global budget is 0
     assert resp.status_code == 200

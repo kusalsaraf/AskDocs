@@ -1,3 +1,5 @@
+"""Chat conversations, messages, and daily usage records."""
+
 from __future__ import annotations
 
 import uuid
@@ -8,6 +10,8 @@ from apps.core.models import BaseModel
 
 
 class Conversation(BaseModel):
+    """A threaded chat session within a workspace."""
+
     workspace = models.ForeignKey(
         "workspaces.Workspace",
         on_delete=models.CASCADE,
@@ -35,7 +39,38 @@ class Conversation(BaseModel):
         return self.title
 
 
+class UsageRecord(models.Model):
+    """Daily per-user message and token totals for a workspace."""
+
+    workspace = models.ForeignKey(
+        "workspaces.Workspace",
+        on_delete=models.CASCADE,
+        related_name="usage_records",
+    )
+    user = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.CASCADE,
+        related_name="usage_records",
+    )
+    date = models.DateField()
+    message_count = models.PositiveIntegerField(default=0)
+    token_input_count = models.PositiveIntegerField(default=0)
+    token_output_count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        unique_together = [("workspace", "user", "date")]
+        indexes = [
+            models.Index(fields=["workspace", "date"]),
+            models.Index(fields=["user", "date"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.user} @ {self.workspace} on {self.date}: {self.message_count} msgs"
+
+
 class Message(models.Model):
+    """A single user or assistant turn with optional RAG citations and metadata."""
+
     class Role(models.TextChoices):
         USER = "user", "User"
         ASSISTANT = "assistant", "Assistant"

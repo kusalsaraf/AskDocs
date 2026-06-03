@@ -1,3 +1,5 @@
+"""Abstract document parser interface and parsed element types."""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -19,6 +21,8 @@ class ParsedDocument:
 
 
 class ParserProvider(ABC):
+    """Pluggable parser that turns raw file bytes into structured elements."""
+
     provider_name: str
     supported_file_types: set[str]
     supported_strategies: set[str]
@@ -29,4 +33,5 @@ class ParserProvider(ABC):
         file_bytes: bytes,
         file_type: str,
         strategy: str = "fast",
-    ) -> ParsedDocument: ...
+    ) -> ParsedDocument:
+        """Parse file bytes into a document with typed elements and metadata."""

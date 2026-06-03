@@ -130,11 +130,29 @@ export interface ApiPendingInvitation {
   invited_at: string
 }
 
+export interface ApiMemberUsage {
+  user_id: string
+  email: string
+  first_name: string
+  last_name: string
+  message_count: number
+  token_input_count: number
+  token_output_count: number
+}
+
+export interface ApiWorkspaceUsage {
+  total_messages: number
+  total_input_tokens: number
+  total_output_tokens: number
+  members: ApiMemberUsage[]
+}
+
 export interface ApiQuota {
   user_messages_limit: number
   user_messages_used_today: number
   using_platform_default: boolean
   global_budget_remaining: number | null
+  workspace_usage: ApiWorkspaceUsage | null
 }
 
 export interface ApiChunkSource {

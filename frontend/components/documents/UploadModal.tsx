@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { useUploadDocument } from "@/lib/hooks/useDocuments";
 import { useWorkspace } from "@/lib/hooks/useWorkspace";
+import { MAX_UPLOAD_BYTES, ALLOWED_ACCEPT } from "@/lib/constants";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -29,7 +30,7 @@ interface StagedFile {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-const MAX_BYTES = 50 * 1024 * 1024;
+const MAX_BYTES = MAX_UPLOAD_BYTES;
 
 function getKind(file: File): FileKind {
   const name = file.name.toLowerCase();
@@ -46,7 +47,7 @@ function fmtBytes(b: number): string {
 
 function validate(file: File): string | undefined {
   if (getKind(file) === "unknown") return "Unsupported type";
-  if (file.size > MAX_BYTES) return "Exceeds 50MB limit";
+  if (file.size > MAX_BYTES) return "Exceeds 5MB limit";
 }
 
 // ── Sub-components ───────────────────────────────────────────────────────────
@@ -256,7 +257,7 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
           <div>
             <DialogTitle>Upload documents</DialogTitle>
             <DialogDescription>
-              Add PDFs, DOCX, or TXT files. Up to 50MB per file.
+              Add PDF, DOCX, or TXT files. Up to 5MB per file.
             </DialogDescription>
           </div>
           <button
@@ -288,7 +289,7 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
             <>
               <Dropzone {...dropzoneProps} />
               <p className="text-center text-xs text-muted-foreground/60">
-                Supported: PDF, DOCX, TXT · Max 50MB per file
+                Supported: PDF, DOCX, TXT · Max 5MB per file
               </p>
             </>
           ) : (
@@ -399,7 +400,7 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
           ref={fileInputRef}
           type="file"
           multiple
-          accept=".pdf,.docx,.txt"
+          accept={ALLOWED_ACCEPT}
           className="hidden"
           onChange={handleFileChange}
         />

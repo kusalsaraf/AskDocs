@@ -9,6 +9,7 @@ import { DocumentCard, DocumentRow } from '@/components/documents/DocumentCard'
 import { UploadModal } from '@/components/documents/UploadModal'
 import { useDocuments, useDeleteDocument } from '@/lib/hooks/useDocuments'
 import { useWorkspace } from '@/lib/hooks/useWorkspace'
+import { useAuth } from '@/lib/hooks/useAuth'
 
 type ViewMode = 'grid' | 'list'
 type FilterKey = 'all' | DocumentStatus
@@ -22,6 +23,8 @@ const FILTERS: { key: FilterKey; label: string }[] = [
 
 export default function DocumentsPage() {
   const { activeWorkspace } = useWorkspace()
+  const { user } = useAuth()
+  const isAdmin = activeWorkspace?.role === 'admin'
   const {
     data: documents = [],
     isLoading,
@@ -192,18 +195,22 @@ export default function DocumentsPage() {
           ) : viewMode === 'grid' ? (
             <div className="p-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filtered.map((doc) => (
-                  <DocumentCard
-                    key={doc.id}
-                    document={doc}
-                    onClick={() => {}}
-                    onDelete={() => setDeleteConfirmId(doc.id)}
-                  />
-                ))}
+                {filtered.map((doc) => {
+                  const canDelete = isAdmin || doc.uploadedBy.id === user?.id
+                  return (
+                    <DocumentCard
+                      key={doc.id}
+                      document={doc}
+                      onClick={() => {}}
+                      onDelete={() => setDeleteConfirmId(doc.id)}
+                      canDelete={canDelete}
+                    />
+                  )
+                })}
               </div>
             </div>
           ) : (
-            <ListView documents={filtered} onDelete={(id) => setDeleteConfirmId(id)} />
+            <ListView documents={filtered} onDelete={(id) => setDeleteConfirmId(id)} isAdmin={isAdmin} userId={user?.id} />
           )}
         </div>
       </div>
@@ -235,9 +242,13 @@ function ViewToggleButton({
 function ListView({
   documents,
   onDelete,
+  isAdmin,
+  userId,
 }: {
   documents: ReturnType<typeof useDocuments>['data'] & object[]
   onDelete: (id: string) => void
+  isAdmin: boolean
+  userId: string | undefined
 }) {
   return (
     <div>
@@ -255,7 +266,13 @@ function ListView({
         ))}
       </div>
       {documents.map((doc) => (
-        <DocumentRow key={doc.id} document={doc} onClick={() => {}} onDelete={() => onDelete(doc.id)} />
+        <DocumentRow
+          key={doc.id}
+          document={doc}
+          onClick={() => {}}
+          onDelete={() => onDelete(doc.id)}
+          canDelete={isAdmin || doc.uploadedBy.id === userId}
+        />
       ))}
     </div>
   )
