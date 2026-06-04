@@ -35,9 +35,9 @@
 <details>
 <summary>▶ Walkthrough video (~93s, voiceover)</summary>
 
-<video src="docs/walkthrough.mp4" controls width="800" style="max-width:100%"></video>
+<video src="https://github.com/kusalsaraf/AskDocs/releases/download/v1.0.0/walkthrough.mp4" controls width="800" style="max-width:100%"></video>
 
-> *If the video doesn't play inline, [download it here](docs/walkthrough.mp4).*
+> *If the video doesn't play inline, [download it here](https://github.com/kusalsaraf/AskDocs/releases/download/v1.0.0/walkthrough.mp4).*
 
 </details>
 
@@ -248,6 +248,16 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and contribution gu
 
 ---
 
-<p align="center">
-  Built by <strong>Kusal Saraf</strong> — a production-grade portfolio project demonstrating full-stack AI engineering.
-</p>
+---
+
+## Hire / Contact
+
+Built by **Kusal Saraf** — full-stack engineer specialising in AI/ML product development, RAG pipelines, and production Python/TypeScript systems.
+
+If you're building a document intelligence product, a multi-tenant SaaS, or need a senior engineer to ship a greenfield AI feature — reach out:
+
+- 📧 **Email:** [kusalsaraf5@gmail.com](mailto:kusalsaraf5@gmail.com)
+- 🐙 **GitHub:** [github.com/kusalsaraf](https://github.com/kusalsaraf)
+- 💼 **Open to:** Freelance contracts, part-time consulting, and full-time roles
+
+<p align="center"><sub>Production-grade portfolio project — every line written to demonstrate real engineering judgment, not tutorial code.</sub></p>
