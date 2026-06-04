@@ -11,18 +11,18 @@ from apps.documents.embeddings.base import BaseEmbeddingProvider
 logger = get_logger(__name__)
 
 _EMBED_URL = (
-    f"https://generativelanguage.googleapis.com/v1/{GEMINI_EMBEDDING_MODEL}:embedContent"
+    f"https://generativelanguage.googleapis.com/v1beta/{GEMINI_EMBEDDING_MODEL}:embedContent"
 )
 
 
 class GeminiEmbeddingProvider(BaseEmbeddingProvider):
-    """Generate embeddings via the Google Generative AI REST v1 API."""
+    """Generate embeddings via the Google Generative AI REST v1beta API."""
 
     def embed(self, text: str, *, task_type: str = "retrieval_query") -> list[float]:
         """Return an embedding vector for *text* using Gemini ``text-embedding-004``.
 
-        Uses the REST v1 endpoint directly because the google-generativeai SDK
-        routes embed_content to v1beta where text-embedding-004 is unavailable.
+        Uses the REST v1beta endpoint directly — AI Studio API keys are scoped
+        to v1beta and the google-generativeai SDK 0.7.x has a routing bug.
 
         Args:
             task_type: ``"retrieval_document"`` for ingested chunks,
@@ -42,6 +42,12 @@ class GeminiEmbeddingProvider(BaseEmbeddingProvider):
                 },
                 timeout=30,
             )
+            if not resp.ok:
+                logger.error(
+                    "Gemini embedding API error status=%s body=%s",
+                    resp.status_code,
+                    resp.text,
+                )
             resp.raise_for_status()
             return resp.json()["embedding"]["values"]
         except Exception:
