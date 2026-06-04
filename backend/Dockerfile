@@ -39,6 +39,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8000/api/health/ || exit 1
 
-ENV SERVICE_ROLE=web
-
-CMD ["bash", "-c", "if [ \"$SERVICE_ROLE\" = \"worker\" ]; then exec celery -A config worker --loglevel=info --concurrency=2; else exec bash scripts/start.sh; fi"]
+CMD ["bash", "scripts/start.sh"]
