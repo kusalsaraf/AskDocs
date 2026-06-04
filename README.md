@@ -30,7 +30,7 @@
   <img src="docs/screenshots/settings-provider.png" width="800" alt="BYOK provider configuration" />
 </p>
 
-> 🔗 **[Live demo](https://ask-docs-rho.vercel.app)** *(free tier — backend may take ~30s to wake from sleep)* | use Google Sign-In, then upload a PDF and ask questions
+> 🔗 **[Live demo](https://ask-docs-rho.vercel.app)** *(hosted on free tier infrastructure — the backend sleeps after inactivity and may take 30–60s to wake up; document ingestion and chat work but may be slower than a paid deployment. For a reliable demo, clone and run locally.)*
 
 <details>
 <summary>▶ Walkthrough video (~93s, voiceover)</summary>
@@ -257,7 +257,8 @@ Built by **Kusal Saraf** — full-stack engineer specialising in AI/ML product d
 If you're building a document intelligence product, a multi-tenant SaaS, or need a senior engineer to ship a greenfield AI feature — reach out:
 
 - 📧 **Email:** [kusalsaraf5@gmail.com](mailto:kusalsaraf5@gmail.com)
+- 💼 **LinkedIn:** [linkedin.com/in/kusal-saraf-9ab69015a](https://www.linkedin.com/in/kusal-saraf-9ab69015a/)
 - 🐙 **GitHub:** [github.com/kusalsaraf](https://github.com/kusalsaraf)
-- 💼 **Open to:** Freelance contracts, part-time consulting, and full-time roles
+- 🤝 **Open to:** Freelance contracts, part-time consulting, and full-time roles
 
 <p align="center"><sub>Production-grade portfolio project — every line written to demonstrate real engineering judgment, not tutorial code.</sub></p>
