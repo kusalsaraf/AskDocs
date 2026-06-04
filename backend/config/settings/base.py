@@ -182,7 +182,7 @@ DEFAULT_PLATFORM_PROVIDER = env("DEFAULT_PLATFORM_PROVIDER", default="gemini")
 DEFAULT_PLATFORM_OPENAI_API_KEY = env("DEFAULT_PLATFORM_OPENAI_API_KEY", default="")
 DEFAULT_PLATFORM_OPENAI_MODEL = env("DEFAULT_PLATFORM_OPENAI_MODEL", default="gpt-4o-mini")
 DEFAULT_PLATFORM_GEMINI_API_KEY = env("DEFAULT_PLATFORM_GEMINI_API_KEY", default="")
-DEFAULT_PLATFORM_GEMINI_MODEL = env("DEFAULT_PLATFORM_GEMINI_MODEL", default="gemini-2.0-flash")
+DEFAULT_PLATFORM_GEMINI_MODEL = env("DEFAULT_PLATFORM_GEMINI_MODEL", default="gemini-2.5-flash-lite")
 
 # Embedding provider for document ingestion and query embedding.
 # "openai" uses text-embedding-3-small at 768 dims (Matryoshka truncation).
