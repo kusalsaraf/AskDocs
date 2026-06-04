@@ -34,7 +34,7 @@ class GeminiProvider(BaseLLMProvider):
             self._model_name = config.model_name
         else:
             api_key = settings.DEFAULT_PLATFORM_GEMINI_API_KEY
-            self._model_name = "gemini-1.5-flash"
+            self._model_name = settings.DEFAULT_PLATFORM_GEMINI_MODEL
         genai.configure(api_key=api_key)
 
     def _model(self) -> genai.GenerativeModel:
