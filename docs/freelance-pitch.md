@@ -20,7 +20,7 @@ This document prepares you to talk about AskDocs confidently in Upwork proposals
 
 **The multi-tenancy model (30s):** "Isolation is enforced at three layers. Permission classes at the HTTP layer check workspace membership before any view logic runs. A queryset mixin filters every database query to the current workspace. And child models like DocumentChunk and Message carry a denormalized workspace FK so retrieval queries never need a join. It's the same pattern you'd use in a production SaaS."
 
-**Wrap-up (15s):** "The backend is production-ready minus the file upload REST API, which I'm building in Phase 6. The deployment target is Fly.io + Supabase + Upstash — all free tier, all standard infrastructure choices."
+**Wrap-up (15s):** "The backend is production-ready minus the file upload REST API, which I'm building in Phase 6. Deployed to Render + Vercel + Supabase — all free tier. Live at https://ask-docs-rho.vercel.app."
 
 ## Talking Points by Client Type
 
