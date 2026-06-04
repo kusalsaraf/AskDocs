@@ -30,7 +30,16 @@
   <img src="docs/screenshots/settings-provider.png" width="800" alt="BYOK provider configuration" />
 </p>
 
-> :link: **Live demo:** _Coming soon_ | :movie_camera: **[Walkthrough video](docs/walkthrough.mp4)** (~93s, voiceover)
+> 🔗 **[Live demo](https://ask-docs-rho.vercel.app)** *(free tier — backend may take ~30s to wake from sleep)* | use Google Sign-In, then upload a PDF and ask questions
+
+<details>
+<summary>▶ Walkthrough video (~93s, voiceover)</summary>
+
+<video src="docs/walkthrough.mp4" controls width="800" style="max-width:100%"></video>
+
+> *If the video doesn't play inline, [download it here](docs/walkthrough.mp4).*
+
+</details>
 
 ---
 
