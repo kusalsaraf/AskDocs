@@ -18,6 +18,9 @@ _EMBED_URL = (
 class GeminiEmbeddingProvider(BaseEmbeddingProvider):
     """Generate embeddings via the Google Generative AI REST v1beta API."""
 
+    def __init__(self, api_key: str | None = None) -> None:
+        self._api_key = api_key or settings.DEFAULT_PLATFORM_GEMINI_API_KEY
+
     def embed(self, text: str, *, task_type: str = "retrieval_query") -> list[float]:
         """Return an embedding vector for *text* using Gemini ``text-embedding-004``.
 
@@ -34,7 +37,7 @@ class GeminiEmbeddingProvider(BaseEmbeddingProvider):
         try:
             resp = requests.post(
                 _EMBED_URL,
-                params={"key": settings.DEFAULT_PLATFORM_GEMINI_API_KEY},
+                params={"key": self._api_key},
                 json={
                     "model": GEMINI_EMBEDDING_MODEL,
                     "content": {"parts": [{"text": text}]},
