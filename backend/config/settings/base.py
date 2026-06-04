@@ -46,6 +46,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -104,6 +105,12 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "accounts.User"
@@ -171,7 +178,7 @@ PROVIDER_REQUEST_TIMEOUT_SECONDS = env.int("PROVIDER_REQUEST_TIMEOUT_SECONDS", d
 
 # Platform-default LLM provider (used when a workspace has no BYOK ProviderConfig).
 # Set DEFAULT_PLATFORM_PROVIDER to "openai" or "gemini" and supply the matching key.
-DEFAULT_PLATFORM_PROVIDER = env("DEFAULT_PLATFORM_PROVIDER", default="openai")
+DEFAULT_PLATFORM_PROVIDER = env("DEFAULT_PLATFORM_PROVIDER", default="gemini")
 DEFAULT_PLATFORM_OPENAI_API_KEY = env("DEFAULT_PLATFORM_OPENAI_API_KEY", default="")
 DEFAULT_PLATFORM_OPENAI_MODEL = env("DEFAULT_PLATFORM_OPENAI_MODEL", default="gpt-4o-mini")
 DEFAULT_PLATFORM_GEMINI_API_KEY = env("DEFAULT_PLATFORM_GEMINI_API_KEY", default="")
@@ -180,7 +187,7 @@ DEFAULT_PLATFORM_GEMINI_MODEL = env("DEFAULT_PLATFORM_GEMINI_MODEL", default="ge
 # Embedding provider for document ingestion and query embedding.
 # "openai" uses text-embedding-3-small at 768 dims (Matryoshka truncation).
 # "gemini" uses text-embedding-004 at 768 dims.
-EMBEDDING_PROVIDER = env("EMBEDDING_PROVIDER", default="openai")
+EMBEDDING_PROVIDER = env("EMBEDDING_PROVIDER", default="gemini")
 
 # ── Document parser ───────────────────────────────────────────────────────────
 PARSER_PROVIDER = env("PARSER_PROVIDER", default="unstructured")

@@ -79,7 +79,7 @@ def ingest_document(self, document_id: str, file_bytes_b64: str) -> None:
             content = chunk.content.replace("\x00", "")
             if not content.strip():
                 continue
-            embedding = embedder.embed(content)
+            embedding = embedder.embed(content, task_type="retrieval_document")
             chunk_objects.append(
                 DocumentChunk(
                     document=doc,

@@ -29,7 +29,7 @@ class RetrievedChunk:
 def _embed_query(query: str) -> list[float]:
     """Generate an embedding vector for the user's query."""
     from apps.documents.embeddings.factory import get_embedding_provider
-    return get_embedding_provider().embed(query)
+    return get_embedding_provider().embed(query, task_type="retrieval_query")
 
 
 def retrieve_chunks_for_query(
