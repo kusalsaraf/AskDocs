@@ -71,8 +71,8 @@ def ingest_document(self, document_id: str, file_bytes_b64: str) -> None:
                 extra={"document_id": document_id},
             )
 
-        embedder = get_embedding_provider()
         workspace = doc.workspace
+        embedder = get_embedding_provider(workspace=workspace)
         chunk_objects: list[DocumentChunk] = []
 
         for idx, chunk in enumerate(raw_chunks):
