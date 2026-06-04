@@ -35,7 +35,7 @@ TIKTOKEN_ENCODING = "cl100k_base"
 # ── Embedding ─────────────────────────────────────────────────────────────────
 EMBEDDING_DIMENSIONS = 768
 OPENAI_EMBEDDING_MODEL = "text-embedding-3-small"
-GEMINI_EMBEDDING_MODEL = "models/text-embedding-004"
+GEMINI_EMBEDDING_MODEL = "models/gemini-embedding-001"
 
 # ── LLM provider defaults ────────────────────────────────────────────────────
 DEFAULT_TEMPERATURE = 0.7
