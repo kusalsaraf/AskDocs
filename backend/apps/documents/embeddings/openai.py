@@ -18,9 +18,9 @@ class OpenAIEmbeddingProvider(BaseEmbeddingProvider):
     768-dim vectors from the ``text-embedding-3-small`` model.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, api_key: str | None = None) -> None:
         self._client = openai.OpenAI(
-            api_key=settings.DEFAULT_PLATFORM_OPENAI_API_KEY,
+            api_key=api_key or settings.DEFAULT_PLATFORM_OPENAI_API_KEY,
             timeout=getattr(settings, "PROVIDER_REQUEST_TIMEOUT_SECONDS", 30),
         )
 
