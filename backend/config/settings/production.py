@@ -16,6 +16,8 @@ DEBUG = False
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
 
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
+# Allow all Vercel preview deployment URLs automatically (*.vercel.app)
+CORS_ALLOWED_ORIGIN_REGEXES = [r"^https://.*\.vercel\.app$"]
 
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
