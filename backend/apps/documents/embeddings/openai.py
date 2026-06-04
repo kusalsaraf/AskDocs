@@ -24,8 +24,11 @@ class OpenAIEmbeddingProvider(BaseEmbeddingProvider):
             timeout=getattr(settings, "PROVIDER_REQUEST_TIMEOUT_SECONDS", 30),
         )
 
-    def embed(self, text: str) -> list[float]:
+    def embed(self, text: str, *, task_type: str = "retrieval_query") -> list[float]:
         """Return a 768-dimensional embedding for *text*.
+
+        The *task_type* parameter is accepted for interface compatibility
+        but ignored — OpenAI embeddings do not use task type hints.
 
         Raises:
             openai.AuthenticationError: Invalid API key.

@@ -12,8 +12,15 @@ class BaseEmbeddingProvider(ABC):
     """
 
     @abstractmethod
-    def embed(self, text: str) -> list[float]:
+    def embed(self, text: str, *, task_type: str = "retrieval_query") -> list[float]:
         """Convert *text* into a dense embedding vector.
+
+        Args:
+            text: The input text to embed.
+            task_type: Hint for asymmetric retrieval models.
+                ``"retrieval_document"`` for ingested content,
+                ``"retrieval_query"`` for user queries.
+                Providers that don't support task types may ignore this.
 
         Raises:
             Exception: On API authentication, rate-limit, or network failures.
