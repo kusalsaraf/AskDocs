@@ -4,6 +4,9 @@ set -euo pipefail
 echo "Running database migrations..."
 python manage.py migrate --noinput
 
+echo "Starting Celery worker..."
+celery -A config worker --loglevel=info --concurrency=2 &
+
 echo "Starting Gunicorn..."
 exec gunicorn config.wsgi:application \
     --bind 0.0.0.0:8000 \

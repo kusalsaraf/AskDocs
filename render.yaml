@@ -51,46 +51,6 @@ services:
       - key: LOG_LEVEL
         value: INFO
 
-  # Celery background worker
-  - type: worker
-    name: askdocs-worker
-    runtime: docker
-    dockerfilePath: backend/Dockerfile
-    dockerContext: backend
-    plan: free
-    envVars:
-      - key: DJANGO_SETTINGS_MODULE
-        value: config.settings.production
-      - key: DJANGO_SECRET_KEY
-        fromService:
-          name: askdocs-api
-          type: web
-          envVarKey: DJANGO_SECRET_KEY
-      - key: DATABASE_URL
-        sync: false  # Same Supabase connection string as web
-      - key: REDIS_URL
-        fromService:
-          name: askdocs-redis
-          type: redis
-          property: connectionString
-      - key: CELERY_BROKER_URL
-        fromService:
-          name: askdocs-redis
-          type: redis
-          property: connectionString
-      - key: PROVIDER_ENCRYPTION_KEY
-        sync: false  # Same key as web service
-      - key: DEFAULT_PLATFORM_PROVIDER
-        value: gemini
-      - key: DEFAULT_PLATFORM_GEMINI_API_KEY
-        sync: false
-      - key: EMBEDDING_PROVIDER
-        value: gemini
-      - key: LOG_LEVEL
-        value: INFO
-      - key: SERVICE_ROLE
-        value: worker
-
   # Redis for caching and Celery broker
   - type: redis
     name: askdocs-redis
