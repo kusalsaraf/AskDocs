@@ -26,10 +26,16 @@ class RetrievedChunk:
     page_number: int | None
 
 
-def _embed_query(query: str) -> list[float]:
-    """Generate an embedding vector for the user's query."""
+def _embed_query(query: str, workspace_id: UUID) -> list[float]:
+    """Generate an embedding vector for the user's query using the workspace's provider."""
     from apps.documents.embeddings.factory import get_embedding_provider
-    return get_embedding_provider().embed(query, task_type="retrieval_query")
+    from apps.workspaces.models import Workspace
+
+    try:
+        workspace = Workspace.objects.get(id=workspace_id)
+    except Workspace.DoesNotExist:
+        workspace = None
+    return get_embedding_provider(workspace=workspace).embed(query, task_type="retrieval_query")
 
 
 def retrieve_chunks_for_query(
@@ -54,7 +60,7 @@ def retrieve_chunks_for_query(
     """
     from pgvector.django import CosineDistance
 
-    query_embedding = _embed_query(query)
+    query_embedding = _embed_query(query, workspace_id)
 
     qs = (
         DocumentChunk.objects.filter(workspace_id=workspace_id)
