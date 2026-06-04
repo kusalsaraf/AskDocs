@@ -50,7 +50,6 @@ services:
         value: "false"
       - key: LOG_LEVEL
         value: INFO
-    startCommand: bash scripts/start.sh
 
   # Celery background worker
   - type: worker
@@ -89,7 +88,8 @@ services:
         value: gemini
       - key: LOG_LEVEL
         value: INFO
-    startCommand: celery -A config worker --loglevel=info --concurrency=2
+      - key: SERVICE_ROLE
+        value: worker
 
   # Redis for caching and Celery broker
   - type: redis
